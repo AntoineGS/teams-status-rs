@@ -7,7 +7,11 @@ edition = "2021"
 
 [dependencies]
 dotenv = "*"
-home-assistant-rest = "*" # Might need to run "sudo apt install openssl-dev" and maybe for pkg-config
+home-assistant-rest = "*"
 actix-rt = "*"
 log = "*"
 chrono = "*"
+tungstenite = "*"
+url = "*"
+json = "*"
+tokio = { version = "*", features = ["full"] }
