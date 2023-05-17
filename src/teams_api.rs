@@ -1,15 +1,18 @@
 use crate::ha_api::HAApi;
 use crate::teams_states::TeamsStates;
 use crate::utils;
-use tungstenite::{connect, Message};
+use std::fmt::{Debug, Formatter};
+use std::net::TcpStream;
+use tungstenite::stream::MaybeTlsStream;
+use tungstenite::{connect, Message, WebSocket};
 use url::Url;
 
 const ENV_API_TOKEN: &str = "TSAPITOKEN";
 
 pub struct TeamsAPI {
-    api_token: String,
     listener: HAApi,
     teams_states: TeamsStates,
+    pub socket: WebSocket<MaybeTlsStream<TcpStream>>,
 }
 
 impl TeamsAPI {
@@ -19,19 +22,13 @@ impl TeamsAPI {
             camera_on: false,
             in_meeting: false,
         };
-        Self {
-            api_token,
-            listener,
-            teams_states,
-        }
-    }
 
-    pub async fn listen_loop(&mut self) {
         let url = &format!(
             "ws://localhost:8124?token={}&protocol-version=1.0.0",
-            self.api_token
+            api_token
         );
-        let (mut socket, _response) =
+
+        let (socket, _response) =
             connect(Url::parse(url).unwrap()).expect("Unable to connect to Teams API");
 
         // println!("Connected to the server");
@@ -41,8 +38,16 @@ impl TeamsAPI {
         //     println!("* {}", header);
         // }
 
+        Self {
+            listener,
+            teams_states,
+            socket,
+        }
+    }
+
+    pub async fn listen_loop(&mut self) {
         loop {
-            let msg = socket.read_message().expect("Error reading message");
+            let msg = self.socket.read_message().expect("Error reading message");
             let mut has_changed = false;
             let answer = json::parse(&msg.to_string()).unwrap();
 
@@ -68,6 +73,12 @@ impl TeamsAPI {
                 self.listener.notify_changed(&self.teams_states).await;
             }
         }
+    }
+}
+
+impl Debug for TeamsAPI {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "TeamsAPI")
     }
 }
 
