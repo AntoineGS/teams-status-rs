@@ -3,6 +3,7 @@ mod teams_api;
 mod teams_states;
 mod utils;
 
+use std::sync::mpsc;
 use tray_item::{IconSource, TrayItem};
 
 use crate::teams_api::TeamsAPI;
@@ -13,22 +14,20 @@ use ha_api::HAApi;
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     dotenv().ok();
 
-    // let mut suspend = false;
     let ha_api = HAApi::new();
     let mut teams_api = TeamsAPI::new(ha_api);
+    let (sender, receiver) = mpsc::sync_channel(1);
 
     let mut tray = TrayItem::new("Tray Example", IconSource::Resource("default-icon")).unwrap();
 
     tray.add_label("Teams Status").unwrap();
 
-    tray.add_menu_item("Quit", || {
-        // suspend = true;
-        // let teams_api_ref = &Arc::try_unwrap(teams_api).expect("");
-        // teams_api.socket.close(None).unwrap();
+    tray.add_menu_item("Quit", move || {
+        sender.send(true).unwrap();
     })
     .unwrap();
 
-    teams_api.listen_loop().await;
+    teams_api.listen_loop(receiver).await;
 
     // teams_api.socket.close(None).unwrap();
     // todo: wait for teams_api loop exit?

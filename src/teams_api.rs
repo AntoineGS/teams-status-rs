@@ -3,6 +3,8 @@ use crate::teams_states::TeamsStates;
 use crate::utils;
 use std::fmt::{Debug, Formatter};
 use std::net::TcpStream;
+use std::ops::Deref;
+use std::sync::mpsc::Receiver;
 use tungstenite::stream::MaybeTlsStream;
 use tungstenite::{connect, Message, WebSocket};
 use url::Url;
@@ -45,8 +47,12 @@ impl TeamsAPI {
         }
     }
 
-    pub async fn listen_loop(&mut self) {
+    pub async fn listen_loop(&mut self, receiver: Receiver<bool>) {
         loop {
+            if receiver.try_recv().unwrap_or(false) {
+                break;
+            }
+
             let msg = self.socket.read_message().expect("Error reading message");
             let mut has_changed = false;
             let answer = json::parse(&msg.to_string()).unwrap();
