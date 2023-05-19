@@ -17,3 +17,6 @@ json = "*"
 tokio = { version = "*", features = ["full"] }
 # windows-service = "*" # future use to convert to windows process
 tray-item = "*"
+
+[build-dependencies]
+windres = "*"

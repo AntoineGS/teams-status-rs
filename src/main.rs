@@ -3,14 +3,7 @@ mod teams_api;
 mod teams_states;
 mod utils;
 
-use std::rc::Rc;
-use std::sync::Arc;
-use std::thread::sleep;
-use std::time::Duration;
-use {
-    std::sync::mpsc,
-    tray_item::{IconSource, TrayItem},
-};
+use tray_item::{IconSource, TrayItem};
 
 use crate::teams_api::TeamsAPI;
 use dotenv::dotenv;
@@ -22,27 +15,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // let mut suspend = false;
     let ha_api = HAApi::new();
-    let teams_api = Arc::new(TeamsAPI::new(ha_api));
+    let mut teams_api = TeamsAPI::new(ha_api);
 
-    let mut tray = TrayItem::new(
-        "Tray Example",
-        IconSource::Resource("name-of-icon-in-rc-file"),
-    )
-    .unwrap();
+    let mut tray = TrayItem::new("Tray Example", IconSource::Resource("default-icon")).unwrap();
 
     tray.add_label("Teams Status").unwrap();
 
     tray.add_menu_item("Quit", || {
         // suspend = true;
-        Arc::try_unwrap(teams_api)
-            .unwrap()
-            .socket
-            .close(None)
-            .unwrap();
+        // let teams_api_ref = &Arc::try_unwrap(teams_api).expect("");
+        // teams_api.socket.close(None).unwrap();
     })
     .unwrap();
 
-    Arc::try_unwrap(teams_api).unwrap().listen_loop().await;
+    teams_api.listen_loop().await;
 
     // teams_api.socket.close(None).unwrap();
     // todo: wait for teams_api loop exit?
