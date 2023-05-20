@@ -23,7 +23,7 @@ impl HAApi {
 
     /* friendly_name is needed as API calls wipe the configured name */
     pub async fn update_ha(&self, state: &str, icon: &str, friendly_name: &str, entity_id: &str) {
-        // todo: remove this status check here
+        // todo: remove this status check
         let api_status = self.client.get_api_status().await.unwrap();
 
         if api_status.message != "API running." {
@@ -87,6 +87,7 @@ fn bool_to_str(bool: bool) -> String {
     };
 }
 
+#[allow(unused_imports)]
 mod tests {
     use crate::ha_api::{HAApi, ENV_HA_LONG_LIVE_TOKEN, ENV_HA_URL};
     use chrono::Utc;
