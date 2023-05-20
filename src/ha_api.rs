@@ -1,9 +1,10 @@
 use crate::teams_states::TeamsStates;
 use crate::utils;
 use home_assistant_rest::post::StateParams;
-use home_assistant_rest::{get::StateEnum, Client};
+use home_assistant_rest::Client;
 use log::error;
 use std::collections::HashMap;
+use std::sync::atomic::Ordering;
 
 const ENV_HA_LONG_LIVE_TOKEN: &str = "TSHATOKEN";
 const ENV_HA_URL: &str = "TSHAURL";
@@ -48,8 +49,8 @@ impl HAApi {
     }
 
     pub async fn notify_changed(&self, teams_status: &TeamsStates) {
-        let in_meeting = &*bool_to_str(teams_status.in_meeting);
-        let icon = if teams_status.in_meeting {
+        let in_meeting = &*bool_to_str(teams_status.in_meeting.load(Ordering::Relaxed));
+        let icon = if teams_status.in_meeting.load(Ordering::Relaxed) {
             "mdi:phone"
         } else {
             "mdi:phone-in-talk"
@@ -62,8 +63,8 @@ impl HAApi {
         )
         .await;
 
-        let camera_on = &*bool_to_str(teams_status.camera_on);
-        let icon = if teams_status.camera_on {
+        let camera_on = &*bool_to_str(teams_status.camera_on.load(Ordering::Relaxed));
+        let icon = if teams_status.camera_on.load(Ordering::Relaxed) {
             "mdi:camera"
         } else {
             "mdi:camera-off"
@@ -86,66 +87,59 @@ fn bool_to_str(bool: bool) -> String {
     };
 }
 
-// #[async_trait]
-// impl Listener for HAApi {
-//     async fn notify_changed(&self, teams_status: &TeamsStates) {
-//         let in_meeting = &*bool_to_str(teams_status.in_meeting);
-//         self.update_ha(
-//             in_meeting,
-//             "Microsoft Teams Activity",
-//             "mdi:phone",
-//             "sensor.teams_activity",
-//         )
-//         .await;
-//     }
-// }
+mod tests {
+    use crate::ha_api::{HAApi, ENV_HA_LONG_LIVE_TOKEN, ENV_HA_URL};
+    use chrono::Utc;
+    use dotenv::dotenv;
+    use home_assistant_rest::get::StateEnum;
 
-// Cannot use consts in should_panic, see:
-// https://internals.rust-lang.org/t/passing-variables-or-constants-as-arguments-to-the-should-panic-expected-attribute-macro/16695
-#[test]
-#[should_panic(expected = "TSHATOKEN")]
-fn new_token_not_set_will_panic() {
-    std::env::set_var(ENV_HA_URL, "1234");
-    std::env::set_var(ENV_HA_LONG_LIVE_TOKEN, "");
-    HAApi::new();
-}
+    // Cannot use consts in should_panic, see:
+    // https://internals.rust-lang.org/t/passing-variables-or-constants-as-arguments-to-the-should-panic-expected-attribute-macro/16695
+    #[test]
+    #[should_panic(expected = "TSHATOKEN")]
+    fn new_token_not_set_will_panic() {
+        std::env::set_var(ENV_HA_URL, "1234");
+        std::env::set_var(ENV_HA_LONG_LIVE_TOKEN, "");
+        HAApi::new();
+    }
 
-#[test]
-#[should_panic(expected = "TSHAURL")]
-fn new_url_not_set_will_panic() {
-    std::env::set_var(ENV_HA_URL, "");
-    std::env::set_var(ENV_HA_LONG_LIVE_TOKEN, "1234");
-    HAApi::new();
-}
+    #[test]
+    #[should_panic(expected = "TSHAURL")]
+    fn new_url_not_set_will_panic() {
+        std::env::set_var(ENV_HA_URL, "");
+        std::env::set_var(ENV_HA_LONG_LIVE_TOKEN, "1234");
+        HAApi::new();
+    }
 
-// I have not found a way to query friendly_name and icon to confirm this test
-#[actix_rt::test]
-async fn update_ha_state_will_match() {
-    dotenv().ok();
-    let random_state = &*Utc::now().to_string();
-    let ha_api = HAApi::new();
+    // I have not found a way to query friendly_name and icon to confirm this test
+    #[actix_rt::test]
+    async fn update_ha_state_will_match() {
+        dotenv().ok();
+        let random_state = &*Utc::now().to_string();
+        let ha_api = HAApi::new();
 
-    ha_api
-        .update_ha(
-            random_state,
-            "Microsoft Teams Activity",
-            "mdi:phone",
-            "sensor.teams_activity",
-        )
-        .await;
+        ha_api
+            .update_ha(
+                random_state,
+                "Microsoft Teams Activity",
+                "mdi:phone",
+                "sensor.teams_activity",
+            )
+            .await;
 
-    let states_entity = ha_api
-        .client
-        .get_states_of_entity("sensor.teams_activity")
-        .await
-        .unwrap();
+        let states_entity = ha_api
+            .client
+            .get_states_of_entity("sensor.teams_activity")
+            .await
+            .unwrap();
 
-    if let Some(state) = states_entity.state {
-        match state {
-            StateEnum::String(x) => assert_eq!(random_state, x),
-            _ => panic!("Invalid data type detected for entity state."),
+        if let Some(state) = states_entity.state {
+            match state {
+                StateEnum::String(x) => assert_eq!(random_state, x),
+                _ => panic!("Invalid data type detected for entity state."),
+            }
+        } else {
+            panic!("Error reading entity states.")
         }
-    } else {
-        panic!("Error reading entity states.")
     }
 }

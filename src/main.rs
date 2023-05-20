@@ -3,7 +3,7 @@ mod teams_api;
 mod teams_states;
 mod utils;
 
-use std::sync::mpsc;
+use std::sync::{mpsc, Arc};
 use tray_item::{IconSource, TrayItem};
 
 use crate::teams_api::TeamsAPI;
@@ -14,7 +14,7 @@ use ha_api::HAApi;
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     dotenv().ok();
 
-    let ha_api = HAApi::new();
+    let ha_api = Arc::new(HAApi::new());
     let mut teams_api = TeamsAPI::new(ha_api);
     let (sender, receiver) = mpsc::sync_channel(1);
 

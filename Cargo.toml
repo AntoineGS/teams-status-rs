@@ -11,12 +11,14 @@ home-assistant-rest = "*"
 actix-rt = "*"
 log = "*"
 chrono = "*"
-tungstenite = "*"
+tokio-tungstenite = "*"
 url = "*"
 json = "*"
 tokio = { version = "*", features = ["full"] }
 # windows-service = "*" # future use to convert to windows process
 tray-item = "*"
+futures-util = "*"
+futures-channel = "*"
 
 [build-dependencies]
 windres = "*"
