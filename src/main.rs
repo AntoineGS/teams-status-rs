@@ -3,7 +3,10 @@ mod teams_api;
 mod teams_states;
 mod utils;
 
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{mpsc, Arc};
+use std::thread::sleep;
+use std::{thread, time};
 use tray_item::{IconSource, TrayItem};
 
 use crate::teams_api::{start_listening, TeamsAPI};
@@ -16,21 +19,36 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let ha_api = Arc::new(HAApi::new());
     let teams_api = TeamsAPI::new();
-    let (sender, receiver) = mpsc::sync_channel(1);
+    // let (sender, receiver) = mpsc::sync_channel(1);
+    let is_running = Arc::new(AtomicBool::new(true));
 
-    let mut tray = TrayItem::new("Tray Example", IconSource::Resource("default-icon")).unwrap();
+    let is_running_me = is_running.clone();
 
-    tray.add_label("Teams Status").unwrap();
+    #[cfg(target_os = "windows")]
+    {
+        let mut tray = TrayItem::new("Tray Example", IconSource::Resource("default-icon")).unwrap();
+        tray.add_label("Teams Status").unwrap();
 
-    tray.add_menu_item("Quit", move || {
-        sender.send(true).unwrap();
-    })
-    .unwrap();
+        tray.add_menu_item("Quit", move || {
+            is_running_me.store(false, Ordering::Relaxed);
+        })
+        .unwrap();
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        let is_running_me = is_running.clone();
+        thread::spawn(move || {
+            let ten_seconds = time::Duration::from_millis(10000);
+            sleep(ten_seconds);
+            is_running_me.store(false, Ordering::Relaxed);
+        });
+    }
 
     start_listening(
         ha_api.clone(),
         teams_api.teams_states.clone(),
-        receiver,
+        is_running,
         teams_api.url,
     )
     .await;

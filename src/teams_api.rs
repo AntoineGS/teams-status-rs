@@ -82,7 +82,7 @@ async fn wait_for_cancellation(receiver: Receiver<bool>) {
 pub async fn start_listening(
     listener: Arc<HAApi>,
     teams_states: Arc<TeamsStates>,
-    receiver: Receiver<bool>,
+    is_running: Arc<AtomicBool>,
     url: String,
 ) {
     let (stdin_tx, stdin_rx) = futures_channel::mpsc::unbounded();
@@ -109,7 +109,7 @@ pub async fn start_listening(
     future::select(stdin_to_ws, ws_to_stdout).await;
     // });
 
-    wait_for_cancellation(receiver).await;
+    // wait_for_cancellation(receiver).await;
     // thread.await.unwrap();
 }
 
