@@ -93,6 +93,9 @@ pub async fn start_listening(
     let stdin_to_ws = stdin_rx.map(Ok).forward(write);
 
     let ws_to_stdout = {
+        // todo: try to make this sync
+        // todo: try to create the ha api call object inside async call (def doable, though less efficient, but that's fine)
+        // todo: Work with 2 explicit threads (one which will own haapi, the other for processing), with a channel for comm
         read.for_each(|message| async {
             let data = &message.unwrap().into_data();
             let json = String::from_utf8_lossy(data);
