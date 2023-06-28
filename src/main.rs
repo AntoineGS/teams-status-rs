@@ -1,16 +1,23 @@
-#![windows_subsystem = "windows"]
+#![windows_subsystem = "windows"] // not sure how to get this working on linux atm
 mod ha_api;
 mod teams_api;
 mod teams_states;
-mod tray;
+mod traits;
+#[cfg(target_os = "linux")]
+mod tray_linux;
+#[cfg(target_os = "windows")]
+mod tray_windows;
 mod utils;
 
 use std::process::exit;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
-use tray_item::{IconSource, TrayItem};
 
 use crate::teams_api::{start_listening, TeamsAPI};
+#[cfg(target_os = "linux")]
+use crate::tray_linux::create_tray;
+#[cfg(target_os = "windows")]
+use crate::tray_windows::create_tray;
 use dotenv::dotenv;
 use ha_api::HAApi;
 
@@ -22,22 +29,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let teams_api = TeamsAPI::new();
     let is_running = Arc::new(AtomicBool::new(true));
     let is_running_me = is_running.clone();
-
-    let mut tray = TrayItem::new("Teams Status", IconSource::Resource("default-icon")).unwrap();
-    tray.add_menu_item("Quit", move || {
-        is_running_me.store(false, Ordering::Relaxed);
-    })
-    .unwrap();
-
-    #[cfg(target_os = "linux")]
-    {
-        let is_running_me = is_running.clone();
-        thread::spawn(move || {
-            let ten_seconds = time::Duration::from_millis(10000);
-            sleep(ten_seconds);
-            is_running_me.store(false, Ordering::Relaxed);
-        });
-    }
+    let _tray = create_tray(is_running_me);
 
     start_listening(
         ha_api.clone(),
@@ -46,9 +38,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         teams_api.url,
     )
     .await;
-
-    // teams_api.socket.close(None).unwrap();
-    // todo: wait for teams_api loop exit?
 
     exit(0)
 
