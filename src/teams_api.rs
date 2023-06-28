@@ -3,8 +3,9 @@ use crate::teams_states::TeamsStates;
 use crate::utils;
 use futures_util::{future, pin_mut, StreamExt};
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::mpsc::Receiver;
 use std::sync::Arc;
+use std::thread::sleep;
+use std::time;
 use tokio::io::AsyncReadExt;
 use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
 
@@ -74,11 +75,6 @@ pub async fn parse_data(json: &str, listener: Arc<HAApi>, teams_states: Arc<Team
     }
 }
 
-async fn wait_for_cancellation(receiver: Receiver<bool>) {
-    receiver.recv().unwrap();
-    // loop {}
-}
-
 pub async fn start_listening(
     listener: Arc<HAApi>,
     teams_states: Arc<TeamsStates>,
@@ -104,13 +100,21 @@ pub async fn start_listening(
         })
     };
 
-    // let thread = tokio::spawn(async {
-    pin_mut!(stdin_to_ws, ws_to_stdout);
-    future::select(stdin_to_ws, ws_to_stdout).await;
-    // });
+    let running_future = async {
+        let one_second = time::Duration::from_millis(1000);
 
-    // wait_for_cancellation(receiver).await;
-    // thread.await.unwrap();
+        while is_running.load(Ordering::Relaxed) {
+            sleep(one_second);
+        }
+        false
+    };
+
+    pin_mut!(stdin_to_ws, running_future, ws_to_stdout);
+    let ws_futures = async {
+        future::select(stdin_to_ws, ws_to_stdout).await;
+    };
+    pin_mut!(ws_futures);
+    future::select(ws_futures, running_future).await;
 }
 
 // mod tests {

@@ -1,5 +1,6 @@
 use crate::teams_states::TeamsStates;
 use crate::utils;
+use crate::utils::bool_to_str;
 use home_assistant_rest::post::StateParams;
 use home_assistant_rest::Client;
 use log::error;
@@ -23,7 +24,6 @@ impl HAApi {
 
     /* friendly_name is needed as API calls wipe the configured name */
     pub async fn update_ha(&self, state: &str, icon: &str, friendly_name: &str, entity_id: &str) {
-        // todo: remove this status check
         let api_status = self.client.get_api_status().await.unwrap();
 
         if api_status.message != "API running." {
@@ -77,14 +77,6 @@ impl HAApi {
         )
         .await;
     }
-}
-
-fn bool_to_str(bool: bool) -> String {
-    return if bool {
-        "on".to_string()
-    } else {
-        "off".to_string()
-    };
 }
 
 #[allow(unused_imports)]
