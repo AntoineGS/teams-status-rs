@@ -2,6 +2,7 @@ use crate::ha_api::HAApi;
 use crate::teams_states::TeamsStates;
 use crate::utils;
 use futures_util::{future, pin_mut, StreamExt};
+use log::info;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::thread::sleep;
@@ -28,13 +29,6 @@ impl TeamsAPI {
             "ws://localhost:8124?token={}&protocol-version=1.0.0",
             api_token
         );
-
-        // println!("Connected to the server");
-        // println!("Response HTTP code: {}", response.status());
-        // println!("Response contains the following headers:");
-        // for (ref header, _value) in response.headers() {
-        //     println!("* {}", header);
-        // }
 
         Self { teams_states, url }
     }
@@ -89,13 +83,10 @@ pub async fn start_listening(
     let stdin_to_ws = stdin_rx.map(Ok).forward(write);
 
     let ws_to_stdout = {
-        // todo: try to make this sync
-        // todo: try to create the ha api call object inside async call (def doable, though less efficient, but that's fine)
-        // todo: Work with 2 explicit threads (one which will own haapi, the other for processing), with a channel for comm
         read.for_each(|message| async {
             let data = &message.unwrap().into_data();
             let json = String::from_utf8_lossy(data);
-            println!("{}", json);
+            info!("{}", json);
             parse_data(&json, listener.clone(), teams_states.clone()).await;
         })
     };
@@ -106,15 +97,16 @@ pub async fn start_listening(
         while is_running.load(Ordering::Relaxed) {
             sleep(one_second);
         }
+        info!("Application close requested");
         false
     };
 
     pin_mut!(stdin_to_ws, running_future, ws_to_stdout);
     let ws_futures = async {
-        future::select(stdin_to_ws, ws_to_stdout).await;
+        future::select(running_future, ws_to_stdout).await;
     };
     pin_mut!(ws_futures);
-    future::select(ws_futures, running_future).await;
+    future::select(ws_futures, stdin_to_ws).await;
 }
 
 // mod tests {

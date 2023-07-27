@@ -15,10 +15,11 @@ tokio-tungstenite = "*"
 url = "*"
 json = "*"
 tokio = { version = "*", features = ["full"] }
-# windows-service = "*" # future use to convert to windows process
 tray-item = "*"
 futures-util = "*"
 futures-channel = "*"
+#env_logger = "*"
+log4rs = "*"
 
 [build-dependencies]
 windres = "*"
