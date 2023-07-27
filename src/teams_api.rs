@@ -80,8 +80,7 @@ pub async fn start_listening(
     let url_local = url::Url::parse(&url).unwrap();
     let (ws_stream, _) = connect_async(url_local).await.expect("Failed to connect");
     let (write, read) = ws_stream.split();
-    let stdin_to_ws = stdin_rx.map(Ok).forward(write);
-
+    let stdin_to_ws = stdin_rx.map(Ok).forward(write); // this here finishes right away
     let ws_to_stdout = {
         read.for_each(|message| async {
             let data = &message.unwrap().into_data();
@@ -92,21 +91,20 @@ pub async fn start_listening(
     };
 
     let running_future = async {
-        let one_second = time::Duration::from_millis(1000);
+        let one_second = time::Duration::from_secs(1);
 
         while is_running.load(Ordering::Relaxed) {
             sleep(one_second);
         }
         info!("Application close requested");
-        false
     };
 
     pin_mut!(stdin_to_ws, running_future, ws_to_stdout);
     let ws_futures = async {
-        future::select(running_future, ws_to_stdout).await;
+        future::select(stdin_to_ws, ws_to_stdout).await;
     };
     pin_mut!(ws_futures);
-    future::select(ws_futures, stdin_to_ws).await;
+    future::select(ws_futures, running_future).await;
 }
 
 // mod tests {
