@@ -5,7 +5,6 @@ use futures_util::{future, pin_mut, StreamExt};
 use log::info;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-use std::thread::sleep;
 use std::time;
 use tokio::io::AsyncReadExt;
 use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
@@ -45,6 +44,7 @@ async fn read_stdin(tx: futures_channel::mpsc::UnboundedSender<Message>) {
         buf.truncate(n);
         tx.unbounded_send(Message::binary(buf)).unwrap();
     }
+    info!("Exiting read_stdin")
 }
 
 pub async fn parse_data(json: &str, listener: Arc<HAApi>, teams_states: Arc<TeamsStates>) {
@@ -94,7 +94,7 @@ pub async fn start_listening(
         let one_second = time::Duration::from_secs(1);
 
         while is_running.load(Ordering::Relaxed) {
-            sleep(one_second);
+            tokio::time::sleep(one_second).await;
         }
         info!("Application close requested");
     };
