@@ -1,11 +1,7 @@
-#![windows_subsystem = "windows"] // not sure how to get this working on linux atm
 mod ha_api;
 mod teams_api;
 mod teams_states;
 mod traits;
-#[cfg(target_os = "linux")]
-mod tray_linux;
-#[cfg(target_os = "windows")]
 mod tray_windows;
 mod utils;
 
@@ -14,9 +10,6 @@ use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 
 use crate::teams_api::{start_listening, TeamsAPI};
-#[cfg(target_os = "linux")]
-use crate::tray_linux::create_tray;
-#[cfg(target_os = "windows")]
 use crate::tray_windows::create_tray;
 use dotenv::dotenv;
 use ha_api::HAApi;

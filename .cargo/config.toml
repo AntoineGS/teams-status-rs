@@ -1,2 +1,0 @@
-# Uncomment if building from linux
-#build.target = "x86_64-pc-windows-gnu"
