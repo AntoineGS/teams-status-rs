@@ -6,20 +6,20 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-dotenv = "*"
-home-assistant-rest = "*"
-actix-rt = "*"
-log = "*"
-chrono = "*"
-tokio-tungstenite = "*"
-url = "*"
+dotenv = "0.15.0"
+home-assistant-rest = "0.2.0"
+actix-rt = "2.9.0"
+log = "0.4.20"
+chrono = "0.4.31"
+tokio-tungstenite = "0.20.1"
+url = "2.4.1"
 json = "*"
-tokio = { version = "*", features = ["full"] }
-tray-item = "*"
-futures-util = "*"
-futures-channel = "*"
+tokio = { version = "1.32.0", features = ["full"] }
+tray-item = "0.8.0"
+futures-util = "0.3.28"
+futures-channel = "0.3.28"
 #env_logger = "*"
-log4rs = "*"
+log4rs = "1.2.0"
 
 [build-dependencies]
-windres = "*"
+windres = "0.2.2"
