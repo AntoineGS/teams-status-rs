@@ -27,7 +27,7 @@ impl HAApi {
         let api_status = self.client.get_api_status().await.unwrap();
 
         if api_status.message != "API running." {
-            error!("API is not running");
+            error!("Home Assistant API cannot be reached");
             return;
         }
 
