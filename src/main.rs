@@ -1,3 +1,5 @@
+// TODO: This actually breaks the app, but it would prevent the command line from opening
+// #![windows_subsystem = "windows"]
 mod ha_api;
 mod teams_api;
 mod teams_states;
