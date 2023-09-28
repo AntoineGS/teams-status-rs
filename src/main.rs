@@ -24,7 +24,7 @@ use log4rs::Config;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let logfile = FileAppender::builder()
-        .encoder(Box::new(PatternEncoder::new("{l} - {m}\n")))
+        .encoder(Box::new(PatternEncoder::new("{d:<36} {l} {t} - {m}{n}")))
         .build("output.log")?;
 
     let config = Config::builder()
