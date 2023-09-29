@@ -41,12 +41,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     info!("Application closing");
 
-    exit(0)
-
-    // todo: ensure Teams connection can be lost and reconnected since it is WS and not REST
-    // todo: logging
-    // todo: implement back all configs from orig project
-    // todo: try to trigger an initial status response
+    exit(0);
 }
 
 pub async fn run() {
@@ -64,3 +59,14 @@ pub async fn run() {
     )
     .await;
 }
+
+// todo: write new tests and pass existing ones
+// todo: ensure Teams connection can be lost and reconnected since it is WS and not REST
+// todo: logging
+// todo: Implement settings.ps1 from orig (icons and entities to use)
+// todo: try to trigger an initial status response
+// todo: translations & language config
+// todo: config that supports .env file or actual env values
+// todo: doc
+// todo: auto create versions and packages when creating tags on GitHub (if doable)
+// todo: fix the command prompt
