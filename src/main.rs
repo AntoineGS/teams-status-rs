@@ -15,7 +15,7 @@ use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 
 use crate::configuration::{load_configuration, Configuration};
-use crate::teams_api::{start_listening, TeamsAPI};
+use crate::teams_api::TeamsAPI;
 use crate::tray_windows::create_tray;
 use dotenv::dotenv;
 use ha_api::HaApi;
@@ -49,20 +49,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     exit(0);
 }
 
-pub async fn run(conf: Configuration) {
+async fn run(conf: Configuration) {
     let ha_api = Arc::new(HaApi::new(&conf.ha));
     let teams_api = TeamsAPI::new(&conf.teams);
+    // used by try icon to allow exiting the application
     let is_running = Arc::new(AtomicBool::new(true));
-    let is_running_me = is_running.clone();
-    let _tray = create_tray(is_running_me);
+    let _tray = create_tray(is_running.clone());
 
-    start_listening(
-        ha_api.clone(), //todo: no need to clone this, old one will die here
-        teams_api.teams_states.clone(),
-        is_running,
-        teams_api.url,
-    )
-    .await;
+    teams_api.start_listening(ha_api, is_running).await;
 }
 
 // todo: write new tests and pass existing ones

@@ -29,6 +29,41 @@ impl TeamsAPI {
 
         Self { teams_states, url }
     }
+
+    // todo: HaApi creates a dependency on Home Assistant, could be fun to abstract it
+    pub async fn start_listening(&self, listener: Arc<HaApi>, is_running: Arc<AtomicBool>) {
+        let (stdin_tx, stdin_rx) = futures_channel::mpsc::unbounded();
+        tokio::spawn(read_stdin(stdin_tx));
+        let url_local = url::Url::parse(&self.url).unwrap();
+        let (ws_stream, _) = connect_async(url_local).await.expect("Failed to connect");
+        let (write, read) = ws_stream.split();
+        let stdin_to_ws = stdin_rx.map(Ok).forward(write); // this here finishes right away
+        let ws_to_stdout = {
+            read.for_each(|message| async {
+                let data = &message.unwrap().into_data();
+                let json = String::from_utf8_lossy(data);
+                info!("{}", json);
+                parse_data(&json, listener.clone(), self.teams_states.clone()).await;
+            })
+        };
+
+        let running_future = async {
+            let one_second = time::Duration::from_secs(1);
+
+            while is_running.load(Ordering::Relaxed) {
+                tokio::time::sleep(one_second).await;
+            }
+            info!("Application close requested");
+        };
+
+        pin_mut!(stdin_to_ws, running_future, ws_to_stdout);
+        let ws_futures = async {
+            future::select(stdin_to_ws, ws_to_stdout).await;
+        };
+
+        pin_mut!(ws_futures);
+        future::select(ws_futures, running_future).await;
+    }
 }
 
 async fn read_stdin(tx: futures_channel::mpsc::UnboundedSender<Message>) {
@@ -45,7 +80,7 @@ async fn read_stdin(tx: futures_channel::mpsc::UnboundedSender<Message>) {
     info!("Exiting read_stdin")
 }
 
-pub async fn parse_data(json: &str, listener: Arc<HaApi>, teams_states: Arc<TeamsStates>) {
+async fn parse_data(json: &str, listener: Arc<HaApi>, teams_states: Arc<TeamsStates>) {
     let answer = json::parse(&json.to_string()).unwrap();
     let new_in_meeting = answer["meetingUpdate"]["meetingState"]["isInMeeting"]
         .as_bool()
@@ -65,45 +100,6 @@ pub async fn parse_data(json: &str, listener: Arc<HaApi>, teams_states: Arc<Team
     {
         listener.notify_changed(&teams_states).await;
     }
-}
-
-pub async fn start_listening(
-    listener: Arc<HaApi>,
-    teams_states: Arc<TeamsStates>,
-    is_running: Arc<AtomicBool>,
-    url: String,
-) {
-    let (stdin_tx, stdin_rx) = futures_channel::mpsc::unbounded();
-    tokio::spawn(read_stdin(stdin_tx));
-    let url_local = url::Url::parse(&url).unwrap();
-    let (ws_stream, _) = connect_async(url_local).await.expect("Failed to connect");
-    let (write, read) = ws_stream.split();
-    let stdin_to_ws = stdin_rx.map(Ok).forward(write); // this here finishes right away
-    let ws_to_stdout = {
-        read.for_each(|message| async {
-            let data = &message.unwrap().into_data();
-            let json = String::from_utf8_lossy(data);
-            info!("{}", json);
-            parse_data(&json, listener.clone(), teams_states.clone()).await;
-        })
-    };
-
-    let running_future = async {
-        let one_second = time::Duration::from_secs(1);
-
-        while is_running.load(Ordering::Relaxed) {
-            tokio::time::sleep(one_second).await;
-        }
-        info!("Application close requested");
-    };
-
-    pin_mut!(stdin_to_ws, running_future, ws_to_stdout);
-    let ws_futures = async {
-        future::select(stdin_to_ws, ws_to_stdout).await;
-    };
-
-    pin_mut!(ws_futures);
-    future::select(ws_futures, running_future).await;
 }
 
 // mod tests {

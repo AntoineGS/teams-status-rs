@@ -13,12 +13,9 @@ pub struct HaApi {
 
 impl HaApi {
     pub fn new(_ha_base_configuration: &HaConfiguration) -> Self {
-        let ha_base_configuration = _ha_base_configuration;
-        let client = Client::new(
-            &*ha_base_configuration.url,
-            &*ha_base_configuration.long_live_token,
-        )
-        .unwrap();
+        let ha_configuration = _ha_base_configuration;
+        let client =
+            Client::new(&*ha_configuration.url, &*ha_configuration.long_live_token).unwrap();
         Self { client }
     }
 
