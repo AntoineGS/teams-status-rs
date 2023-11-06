@@ -14,12 +14,12 @@ chrono = "0.4.31"
 tokio-tungstenite = "0.20.1"
 url = "2.4.1"
 json = "0.12.4"
-tokio = { version = "1.32.0", features = ["full"] }
-tray-item = "0.8.0"
-futures-util = "0.3.28"
-futures-channel = "0.3.28"
-#env_logger = "*"
+tokio = { version = "1.33.0", features = ["full"] }
+tray-item = "0.9.0"
+futures-util = "0.3.29"
+futures-channel = "0.3.29"
 log4rs = "1.2.0"
+rust-ini = "0.20.0"
 
 [build-dependencies]
 windres = "0.2.2"

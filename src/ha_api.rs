@@ -1,5 +1,5 @@
+use crate::ha_configuration::HaConfiguration;
 use crate::teams_states::TeamsStates;
-use crate::utils;
 use crate::utils::bool_to_str;
 use home_assistant_rest::post::StateParams;
 use home_assistant_rest::Client;
@@ -7,18 +7,18 @@ use log::error;
 use std::collections::HashMap;
 use std::sync::atomic::Ordering;
 
-const ENV_HA_LONG_LIVE_TOKEN: &str = "TSHATOKEN";
-const ENV_HA_URL: &str = "TSHAURL";
-
-pub struct HAApi {
+pub struct HaApi {
     client: Client,
 }
 
-impl HAApi {
-    pub fn new() -> Self {
-        let ha_token = utils::get_env_var(ENV_HA_LONG_LIVE_TOKEN);
-        let ha_url = utils::get_env_var(ENV_HA_URL);
-        let client = Client::new(&*ha_url, &*ha_token).unwrap();
+impl HaApi {
+    pub fn new(_ha_base_configuration: &HaConfiguration) -> Self {
+        let ha_base_configuration = _ha_base_configuration;
+        let client = Client::new(
+            &*ha_base_configuration.url,
+            &*ha_base_configuration.long_live_token,
+        )
+        .unwrap();
         Self { client }
     }
 
@@ -81,35 +81,35 @@ impl HAApi {
 
 #[allow(unused_imports)]
 mod tests {
-    use crate::ha_api::{HAApi, ENV_HA_LONG_LIVE_TOKEN, ENV_HA_URL};
-    use chrono::Utc;
-    use dotenv::dotenv;
-    use home_assistant_rest::get::StateEnum;
-
-    // Cannot use consts in should_panic, see:
-    // https://internals.rust-lang.org/t/passing-variables-or-constants-as-arguments-to-the-should-panic-expected-attribute-macro/16695
-    #[test]
-    #[should_panic(expected = "TSHATOKEN")]
-    fn new_token_not_set_will_panic() {
-        std::env::set_var(ENV_HA_URL, "1234");
-        std::env::set_var(ENV_HA_LONG_LIVE_TOKEN, "");
-        HAApi::new();
-    }
-
-    #[test]
-    #[should_panic(expected = "TSHAURL")]
-    fn new_url_not_set_will_panic() {
-        std::env::set_var(ENV_HA_URL, "");
-        std::env::set_var(ENV_HA_LONG_LIVE_TOKEN, "1234");
-        HAApi::new();
-    }
+    // use crate::ha_api::{HaApi, ENV_HA_LONG_LIVE_TOKEN, ENV_HA_URL};
+    // use chrono::Utc;
+    // use dotenv::dotenv;
+    // use home_assistant_rest::get::StateEnum;
+    //
+    // // Cannot use consts in should_panic, see:
+    // // https://internals.rust-lang.org/t/passing-variables-or-constants-as-arguments-to-the-should-panic-expected-attribute-macro/16695
+    // #[test]
+    // #[should_panic(expected = "TSHATOKEN")]
+    // fn new_token_not_set_will_panic() {
+    //     std::env::set_var(ENV_HA_URL, "1234");
+    //     std::env::set_var(ENV_HA_LONG_LIVE_TOKEN, "");
+    //     HaApi::new();
+    // }
+    //
+    // #[test]
+    // #[should_panic(expected = "TSHAURL")]
+    // fn new_url_not_set_will_panic() {
+    //     std::env::set_var(ENV_HA_URL, "");
+    //     std::env::set_var(ENV_HA_LONG_LIVE_TOKEN, "1234");
+    //     HaApi::new();
+    // }
 
     // I have not found a way to query friendly_name and icon to confirm this test
     #[actix_rt::test]
     async fn update_ha_state_will_match() {
         dotenv().ok();
         let random_state = &*Utc::now().to_string();
-        let ha_api = HAApi::new();
+        let ha_api = HaApi::new();
 
         ha_api
             .update_ha(

@@ -1,6 +1,6 @@
-use crate::ha_api::HAApi;
+use crate::ha_api::HaApi;
+use crate::teams_configuration::TeamsConfiguration;
 use crate::teams_states::TeamsStates;
-use crate::utils;
 use futures_util::{future, pin_mut, StreamExt};
 use log::info;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -9,24 +9,22 @@ use std::time;
 use tokio::io::AsyncReadExt;
 use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
 
-const ENV_API_TOKEN: &str = "TSAPITOKEN";
-
 pub struct TeamsAPI {
     pub teams_states: Arc<TeamsStates>,
     pub url: String,
 }
 
 impl TeamsAPI {
-    pub fn new() -> Self {
-        let api_token = utils::get_env_var(ENV_API_TOKEN);
+    pub fn new(conf: &TeamsConfiguration) -> Self {
         let teams_states = Arc::new(TeamsStates {
             camera_on: AtomicBool::new(false),
             in_meeting: AtomicBool::new(false),
         });
 
         let url = format!(
-            "ws://localhost:8124?token={}&protocol-version=1.0.0",
-            api_token
+            "{url}?token={token}&protocol-version=1.0.0",
+            url = conf.url,
+            token = conf.api_token
         );
 
         Self { teams_states, url }
@@ -47,7 +45,7 @@ async fn read_stdin(tx: futures_channel::mpsc::UnboundedSender<Message>) {
     info!("Exiting read_stdin")
 }
 
-pub async fn parse_data(json: &str, listener: Arc<HAApi>, teams_states: Arc<TeamsStates>) {
+pub async fn parse_data(json: &str, listener: Arc<HaApi>, teams_states: Arc<TeamsStates>) {
     let answer = json::parse(&json.to_string()).unwrap();
     let new_in_meeting = answer["meetingUpdate"]["meetingState"]["isInMeeting"]
         .as_bool()
@@ -70,7 +68,7 @@ pub async fn parse_data(json: &str, listener: Arc<HAApi>, teams_states: Arc<Team
 }
 
 pub async fn start_listening(
-    listener: Arc<HAApi>,
+    listener: Arc<HaApi>,
     teams_states: Arc<TeamsStates>,
     is_running: Arc<AtomicBool>,
     url: String,
@@ -103,6 +101,7 @@ pub async fn start_listening(
     let ws_futures = async {
         future::select(stdin_to_ws, ws_to_stdout).await;
     };
+
     pin_mut!(ws_futures);
     future::select(ws_futures, running_future).await;
 }
@@ -121,3 +120,33 @@ pub async fn start_listening(
 //         api.listen_loop();
 //     }
 // }
+#[actix_rt::test]
+async fn update_ha_state_will_match() {
+    dotenv().ok();
+    let random_state = &*Utc::now().to_string();
+    let ha_api = HaApi::new();
+
+    ha_api
+        .update_ha(
+            random_state,
+            "Microsoft Teams Activity",
+            "mdi:phone",
+            "sensor.teams_activity",
+        )
+        .await;
+
+    let states_entity = ha_api
+        .client
+        .get_states_of_entity("sensor.teams_activity")
+        .await
+        .unwrap();
+
+    if let Some(state) = states_entity.state {
+        match state {
+            StateEnum::String(x) => assert_eq!(random_state, x),
+            _ => panic!("Invalid data type detected for entity state."),
+        }
+    } else {
+        panic!("Error reading entity states.")
+    }
+}

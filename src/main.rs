@@ -1,7 +1,10 @@
 // TODO: This actually breaks the app, but it would prevent the command line from opening
 // #![windows_subsystem = "windows"]
+mod configuration;
 mod ha_api;
+mod ha_configuration;
 mod teams_api;
+mod teams_configuration;
 mod teams_states;
 mod traits;
 mod tray_windows;
@@ -11,10 +14,11 @@ use std::process::exit;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 
+use crate::configuration::{load_configuration, Configuration};
 use crate::teams_api::{start_listening, TeamsAPI};
 use crate::tray_windows::create_tray;
 use dotenv::dotenv;
-use ha_api::HAApi;
+use ha_api::HaApi;
 use log::{info, LevelFilter};
 use log4rs::append::file::FileAppender;
 use log4rs::config::{Appender, Root};
@@ -36,23 +40,24 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     info!("--------------------");
     info!("Application starting");
     dotenv().ok();
+    let conf = load_configuration();
 
-    run().await;
+    run(conf).await;
 
     info!("Application closing");
 
     exit(0);
 }
 
-pub async fn run() {
-    let ha_api = Arc::new(HAApi::new());
-    let teams_api = TeamsAPI::new();
+pub async fn run(conf: Configuration) {
+    let ha_api = Arc::new(HaApi::new(&conf.ha));
+    let teams_api = TeamsAPI::new(&conf.teams);
     let is_running = Arc::new(AtomicBool::new(true));
     let is_running_me = is_running.clone();
     let _tray = create_tray(is_running_me);
 
     start_listening(
-        ha_api.clone(),
+        ha_api.clone(), //todo: no need to clone this, old one will die here
         teams_api.teams_states.clone(),
         is_running,
         teams_api.url,
@@ -63,10 +68,10 @@ pub async fn run() {
 // todo: write new tests and pass existing ones
 // todo: ensure Teams connection can be lost and reconnected since it is WS and not REST
 // todo: logging
-// todo: Implement settings.ps1 from orig (icons and entities to use)
 // todo: try to trigger an initial status response
 // todo: translations & language config
-// todo: config that supports .env file or actual env values
+// todo: config
 // todo: doc
 // todo: auto create versions and packages when creating tags on GitHub (if doable)
 // todo: fix the command prompt
+// todo: encrypt tokens
