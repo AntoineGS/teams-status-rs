@@ -59,12 +59,13 @@ async fn run(conf: Configuration) {
     teams_api.start_listening(ha_api, is_running).await;
 }
 
-// todo: write new tests and pass existing ones
+// todo: fix icon color
 // todo: ensure Teams connection can be lost and reconnected since it is WS and not REST
-// todo: logging
-// todo: try to trigger an initial status response, or at least a update_ha to set icons and labels
-// todo: translations & language config
-// todo: doc, take some from previous project
-// todo: auto create versions and packages when creating tags on GitHub (if doable)
-// todo: fix the command prompt
 // todo: encrypt tokens
+// todo: doc, take some from previous project
+// todo: translations & language config
+// todo: fix the command prompt
+// todo: try to trigger an initial status response, or at least a update_ha to set icons and labels
+// todo: logging
+// todo: write new tests and pass existing ones
+// todo: auto create versions and packages when creating tags on GitHub (if doable)
