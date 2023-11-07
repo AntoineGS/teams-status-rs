@@ -14,7 +14,7 @@ use std::process::exit;
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 
-use crate::configuration::{load_configuration, Configuration};
+use crate::configuration::{get_configuration, Configuration};
 use crate::teams_api::TeamsAPI;
 use crate::tray_windows::create_tray;
 use dotenv::dotenv;
@@ -40,7 +40,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     info!("--------------------");
     info!("Application starting");
     dotenv().ok();
-    let conf = load_configuration();
+    let conf = get_configuration();
 
     run(conf).await;
 
@@ -50,7 +50,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 async fn run(conf: Configuration) {
-    let ha_api = Arc::new(HaApi::new(&conf.ha));
+    let ha_api = Arc::new(HaApi::new(conf.ha));
     let teams_api = TeamsAPI::new(&conf.teams);
     // used by try icon to allow exiting the application
     let is_running = Arc::new(AtomicBool::new(true));
@@ -62,10 +62,9 @@ async fn run(conf: Configuration) {
 // todo: write new tests and pass existing ones
 // todo: ensure Teams connection can be lost and reconnected since it is WS and not REST
 // todo: logging
-// todo: try to trigger an initial status response
+// todo: try to trigger an initial status response, or at least a update_ha to set icons and labels
 // todo: translations & language config
-// todo: config
-// todo: doc
+// todo: doc, take some from previous project
 // todo: auto create versions and packages when creating tags on GitHub (if doable)
 // todo: fix the command prompt
 // todo: encrypt tokens
