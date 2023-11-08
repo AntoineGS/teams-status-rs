@@ -52,7 +52,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 async fn run(conf: Configuration) {
     let ha_api = Arc::new(HaApi::new(conf.ha));
     let teams_api = TeamsAPI::new(&conf.teams);
-    // used by try icon to allow exiting the application
+    // used by tray icon to allow exiting the application
     let is_running = Arc::new(AtomicBool::new(true));
     let _tray = create_tray(is_running.clone());
 
