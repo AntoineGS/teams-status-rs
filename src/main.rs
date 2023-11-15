@@ -15,7 +15,7 @@ use std::sync::Arc;
 use std::thread::sleep;
 use std::time;
 
-use crate::configuration::{get_configuration, Configuration};
+use crate::configuration::get_configuration;
 use crate::teams_api::TeamsAPI;
 use crate::tray_windows::create_tray;
 use dotenv::dotenv;
@@ -41,16 +41,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     info!("--------------------");
     info!("Application starting");
     dotenv().ok();
-    let conf = get_configuration();
 
-    run(conf).await;
+    run().await;
 
     info!("Application closing");
 
     exit(0);
 }
 
-async fn run(_conf: Configuration) {
+async fn run() {
     // used by tray icon to allow exiting the application
     let toggle_mute = Arc::new(AtomicBool::new(false));
     let is_running = Arc::new(AtomicBool::new(true));

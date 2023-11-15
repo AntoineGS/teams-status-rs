@@ -1,5 +1,7 @@
 use crate::ha_api::HaApi;
-use crate::teams_configuration::TeamsConfiguration;
+use crate::teams_configuration::{
+    change_teams_configuration, TeamsConfiguration, TEAMS, TEAMS_API_TOKEN,
+};
 use crate::teams_states::TeamsStates;
 use futures_util::{future, pin_mut, SinkExt, StreamExt};
 use log::{error, info};
@@ -12,6 +14,7 @@ const JSON_MEETING_UPDATE: &str = "meetingUpdate";
 const JSON_MEETING_STATE: &str = "meetingState";
 const JSON_IS_IN_MEETING: &str = "isInMeeting";
 const JSON_IS_VIDEO_ON: &str = "isVideoOn";
+const JSON_TOKEN_REFRESH: &str = "tokenRefresh";
 pub struct TeamsAPI {
     pub teams_states: Arc<TeamsStates>,
     pub url: String,
@@ -24,7 +27,15 @@ impl TeamsAPI {
             is_in_meeting: AtomicBool::new(false),
         });
 
-        let url = format!("{url}?protocol-version=2.0.0&manufacturer=HA-Integration&device=MyPC&app=teams-status-rs&app-version=1.0", url = conf.url,);
+        let api_token = if !conf.api_token.is_empty() {
+            format!("token={}&", &conf.api_token)
+        } else {
+            "".to_string()
+        };
+        let url = format!(
+            "{url}?{api_token}protocol-version=2.0.0&manufacturer=HA-Integration&device=MyPC&app=teams-status-rs&app-version=1.0", 
+            url = conf.url,
+            api_token = api_token);
 
         Self { teams_states, url }
     }
@@ -76,9 +87,6 @@ async fn parse_data(json: &str, listener: Arc<HaApi>, teams_states: Arc<TeamsSta
     let answer = json::parse(&json.to_string()).unwrap_or(json::parse("{}").unwrap());
 
     if answer.has_key(JSON_MEETING_UPDATE) {
-        // If we do not have the key then we assume the API is not yet activated, so we sent a command hoping there is a meeting
-        if !answer[JSON_MEETING_UPDATE].has_key(JSON_MEETING_STATE) {}
-
         let new_in_meeting = answer[JSON_MEETING_UPDATE][JSON_MEETING_STATE][JSON_IS_IN_MEETING]
             .as_bool()
             .unwrap_or_else(|| {
@@ -104,6 +112,12 @@ async fn parse_data(json: &str, listener: Arc<HaApi>, teams_states: Arc<TeamsSta
         {
             listener.notify_changed(&teams_states).await;
         }
+    } else if answer.has_key(JSON_TOKEN_REFRESH) && !answer[JSON_TOKEN_REFRESH].is_empty() {
+        change_teams_configuration(
+            TEAMS,
+            TEAMS_API_TOKEN,
+            &answer[JSON_TOKEN_REFRESH].to_string(),
+        )
     }
 }
 
