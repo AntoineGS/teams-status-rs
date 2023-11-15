@@ -70,9 +70,7 @@ async fn run() {
 
 // todo: fix icon color
 // todo: ensure Teams connection can be lost and reconnected since it is WS and not REST
-// todo: doc, take some from previous project
 // todo: translations & language config
-// todo: try to trigger an initial status response, or at least a update_ha to set icons and labels
 // todo: logging
 // todo: write new tests and pass existing ones
 // todo: auto create versions and packages when creating tags on GitHub (if doable)
