@@ -1,5 +1,4 @@
-// TODO: This actually breaks the app, but it would prevent the command line from opening
-// #![windows_subsystem = "windows"]
+#![windows_subsystem = "windows"]
 mod configuration;
 mod ha_api;
 mod ha_configuration;
@@ -11,8 +10,10 @@ mod tray_windows;
 mod utils;
 
 use std::process::exit;
-use std::sync::atomic::AtomicBool;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
+use std::thread::sleep;
+use std::time;
 
 use crate::configuration::{get_configuration, Configuration};
 use crate::teams_api::TeamsAPI;
@@ -31,11 +32,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .encoder(Box::new(PatternEncoder::new("{d:<36} {l} {t} - {m}{n}")))
         .build("output.log")?;
 
-    let config = Config::builder()
+    let log_config = Config::builder()
         .appender(Appender::builder().build("logfile", Box::new(logfile)))
         .build(Root::builder().appender("logfile").build(LevelFilter::Info))?;
 
-    log4rs::init_config(config)?;
+    log4rs::init_config(log_config)?;
 
     info!("--------------------");
     info!("Application starting");
@@ -49,14 +50,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     exit(0);
 }
 
-async fn run(conf: Configuration) {
-    let ha_api = Arc::new(HaApi::new(conf.ha));
-    let teams_api = TeamsAPI::new(&conf.teams);
+async fn run(_conf: Configuration) {
     // used by tray icon to allow exiting the application
+    let toggle_mute = Arc::new(AtomicBool::new(false));
     let is_running = Arc::new(AtomicBool::new(true));
-    let _tray = create_tray(is_running.clone());
+    let _tray = create_tray(is_running.clone(), toggle_mute.clone());
+    let one_second = time::Duration::from_secs(1);
 
-    teams_api.start_listening(ha_api, is_running).await;
+    while is_running.load(Ordering::Relaxed) {
+        let conf = get_configuration();
+        let ha_api = Arc::new(HaApi::new(conf.ha));
+        let teams_api = TeamsAPI::new(&conf.teams);
+
+        teams_api
+            .start_listening(ha_api, is_running.clone(), toggle_mute.clone())
+            .await;
+        tokio::time::sleep(one_second).await;
+    }
 }
 
 // todo: fix icon color
@@ -64,7 +74,6 @@ async fn run(conf: Configuration) {
 // todo: encrypt tokens
 // todo: doc, take some from previous project
 // todo: translations & language config
-// todo: fix the command prompt
 // todo: try to trigger an initial status response, or at least a update_ha to set icons and labels
 // todo: logging
 // todo: write new tests and pass existing ones

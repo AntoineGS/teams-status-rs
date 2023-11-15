@@ -4,7 +4,7 @@ use crate::ha_configuration::{
     HA_MEETING_FRIENDLY_NAME, HA_MEETING_ID, HA_NOT_IN_A_MEETING, HA_URL, HOME_ASSISTANT,
 };
 use crate::teams_configuration::{
-    create_teams_configuration, TeamsConfiguration, TEAMS, TEAMS_API_TOKEN, TEAMS_URL,
+    create_teams_configuration, TeamsConfiguration, TEAMS, TEAMS_URL,
 };
 use ini::Ini;
 use log::info;
@@ -25,8 +25,8 @@ pub fn get_configuration() -> Configuration {
 fn load_configuration(conf: &mut Configuration) {
     let i = Ini::load_from_file("conf.ini").unwrap_or_else(|err| {
         info!(
-            "The file conf.ini could not be loaded, we will create a new one: {a}",
-            a = err.to_string()
+            "The file conf.ini could not be loaded, we will create a new one: {}",
+            err.to_string()
         );
         return Ini::new();
     });
@@ -63,7 +63,6 @@ fn load_configuration(conf: &mut Configuration) {
                 },
                 Some(TEAMS) => match k {
                     TEAMS_URL => conf.teams.url = v.to_string(),
-                    TEAMS_API_TOKEN => conf.teams.api_token = v.to_string(),
                     _ => { /* We just ignore incorrect configs */ }
                 },
                 _ => { /* We just ignore incorrect configs */ }
@@ -81,8 +80,7 @@ fn create_configuration() -> Configuration {
 fn save_ha_configuration(conf: &Configuration) {
     let mut ini = Ini::new();
     ini.with_section(Some(TEAMS))
-        .set(TEAMS_URL, &conf.teams.url)
-        .set(TEAMS_API_TOKEN, &conf.teams.api_token);
+        .set(TEAMS_URL, &conf.teams.url);
     ini.with_section(Some(HOME_ASSISTANT))
         .set(HA_URL, &conf.ha.url)
         .set(HA_LONG_LIVE_TOKEN, &conf.ha.long_live_token);

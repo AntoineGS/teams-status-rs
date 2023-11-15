@@ -1,8 +1,8 @@
 use crate::ha_api::HaApi;
 use crate::teams_configuration::TeamsConfiguration;
 use crate::teams_states::TeamsStates;
-use futures_util::{future, pin_mut, StreamExt};
-use log::info;
+use futures_util::{future, pin_mut, SinkExt, StreamExt};
+use log::{error, info};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time;
@@ -21,24 +21,22 @@ impl TeamsAPI {
             in_meeting: AtomicBool::new(false),
         });
 
-        let url = format!(
-            "{url}?token={token}&protocol-version=1.0.0",
-            url = conf.url,
-            token = conf.api_token
-        );
+        let url = format!("{url}?protocol-version=2.0.0&manufacturer=HA-Integration&device=MyPC&app=teams-status-rs&app-version=1.0", url = conf.url,);
 
         Self { teams_states, url }
     }
 
     // todo: HaApi creates a dependency on Home Assistant, could be fun to abstract it
-    pub async fn start_listening(&self, listener: Arc<HaApi>, is_running: Arc<AtomicBool>) {
-        let (stdin_tx, stdin_rx) = futures_channel::mpsc::unbounded();
-        tokio::spawn(read_stdin(stdin_tx));
+    pub async fn start_listening(
+        &self,
+        listener: Arc<HaApi>,
+        is_running: Arc<AtomicBool>,
+        toggle_mute: Arc<AtomicBool>,
+    ) {
         let url_local = url::Url::parse(&self.url).unwrap();
         let (ws_stream, _) = connect_async(url_local).await.expect("Failed to connect");
-        let (write, read) = ws_stream.split();
-        let stdin_to_ws = stdin_rx.map(Ok).forward(write); // this here finishes right away
-        let ws_to_stdout = {
+        let (mut write, read) = ws_stream.split();
+        let ws_to_parser = {
             read.for_each(|message| async {
                 let data = &message.unwrap().into_data();
                 let json = String::from_utf8_lossy(data);
@@ -52,53 +50,57 @@ impl TeamsAPI {
 
             while is_running.load(Ordering::Relaxed) {
                 tokio::time::sleep(one_second).await;
+
+                if toggle_mute.load(Ordering::Relaxed) {
+                    let msg = Message::text(
+                        r#"{"requestId":2,"apiVersion":"2.0.0","service":"toggle-mute","action":"toggle-mute"}"#,
+                    );
+
+                    write.send(msg).await.unwrap();
+                    toggle_mute.swap(false, Ordering::Relaxed);
+                }
             }
+
             info!("Application close requested");
         };
 
-        pin_mut!(stdin_to_ws, running_future, ws_to_stdout);
-        let ws_futures = async {
-            future::select(stdin_to_ws, ws_to_stdout).await;
-        };
-
-        pin_mut!(ws_futures);
-        future::select(ws_futures, running_future).await;
+        pin_mut!(running_future, ws_to_parser);
+        future::select(running_future, ws_to_parser).await;
     }
-}
-
-async fn read_stdin(tx: futures_channel::mpsc::UnboundedSender<Message>) {
-    let mut stdin = tokio::io::stdin();
-    loop {
-        let mut buf = vec![0; 1024];
-        let n = match stdin.read(&mut buf).await {
-            Err(_) | Ok(0) => break,
-            Ok(n) => n,
-        };
-        buf.truncate(n);
-        tx.unbounded_send(Message::binary(buf)).unwrap();
-    }
-    info!("Exiting read_stdin")
 }
 
 async fn parse_data(json: &str, listener: Arc<HaApi>, teams_states: Arc<TeamsStates>) {
-    let answer = json::parse(&json.to_string()).unwrap();
-    let new_in_meeting = answer["meetingUpdate"]["meetingState"]["isInMeeting"]
-        .as_bool()
-        .expect("Unable to locate isInMeeting variable in JSON");
-    let new_camera_on = answer["meetingUpdate"]["meetingState"]["isCameraOn"]
-        .as_bool()
-        .expect("Unable to locate isCameraOn variable in JSON");
+    let answer = json::parse(&json.to_string()).unwrap_or(json::parse("{}").unwrap());
 
-    if (teams_states
-        .in_meeting
-        .swap(new_in_meeting, Ordering::Relaxed)
-        != new_in_meeting)
-        || (teams_states
-            .camera_on
+    if answer.has_key("meetingUpdate") {
+        // If we do not have the key then we assume the API is not yet activated, so we sent a command hoping there is a meeting
+        if !answer["meetingUpdate"].has_key("meetingState") {}
+
+        let new_in_meeting = answer["meetingUpdate"]["meetingState"]["isInMeeting"]
+            .as_bool()
+            .unwrap_or_else(|| {
+                error!("Unable to locate isInMeeting variable in JSON");
+                false
+            });
+
+        let new_camera_on = answer["meetingUpdate"]["meetingState"]["isCameraOn"]
+            .as_bool()
+            .unwrap_or_else(|| {
+                error!("Unable to locate isCameraOn variable in JSON");
+                false
+            });
+
+        if (teams_states
+            .in_meeting
             .swap(new_in_meeting, Ordering::Relaxed)
-            != new_camera_on)
-    {
-        listener.notify_changed(&teams_states).await;
+            != new_in_meeting)
+            || (teams_states
+                .camera_on
+                .swap(new_in_meeting, Ordering::Relaxed)
+                != new_camera_on)
+        {
+            listener.notify_changed(&teams_states).await;
+        }
     }
 }
 
