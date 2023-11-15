@@ -74,7 +74,7 @@ impl TeamsAPI {
 
                 if toggle_mute.load(Ordering::Relaxed) {
                     let msg = Message::text(
-                        r#"{"requestId":1,"apiVersion":"2.0.0","service":"toggle-mute","action":"toggle-mute"}"#,
+                        r#"{"requestId":1,"apiVersion":"2.0.0","action":"toggle-mute"}"#,
                     );
 
                     write.send(msg).await.unwrap();
