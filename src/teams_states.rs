@@ -1,6 +1,6 @@
 use std::sync::atomic::AtomicBool;
 
 pub struct TeamsStates {
-    pub camera_on: AtomicBool,
-    pub in_meeting: AtomicBool,
+    pub is_video_on: AtomicBool,
+    pub is_in_meeting: AtomicBool,
 }

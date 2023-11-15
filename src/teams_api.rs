@@ -6,9 +6,12 @@ use log::{error, info};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time;
-use tokio::io::AsyncReadExt;
 use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
 
+const JSON_MEETING_UPDATE: &str = "meetingUpdate";
+const JSON_MEETING_STATE: &str = "meetingState";
+const JSON_IS_IN_MEETING: &str = "isInMeeting";
+const JSON_IS_VIDEO_ON: &str = "isVideoOn";
 pub struct TeamsAPI {
     pub teams_states: Arc<TeamsStates>,
     pub url: String,
@@ -17,8 +20,8 @@ pub struct TeamsAPI {
 impl TeamsAPI {
     pub fn new(conf: &TeamsConfiguration) -> Self {
         let teams_states = Arc::new(TeamsStates {
-            camera_on: AtomicBool::new(false),
-            in_meeting: AtomicBool::new(false),
+            is_video_on: AtomicBool::new(false),
+            is_in_meeting: AtomicBool::new(false),
         });
 
         let url = format!("{url}?protocol-version=2.0.0&manufacturer=HA-Integration&device=MyPC&app=teams-status-rs&app-version=1.0", url = conf.url,);
@@ -53,7 +56,7 @@ impl TeamsAPI {
 
                 if toggle_mute.load(Ordering::Relaxed) {
                     let msg = Message::text(
-                        r#"{"requestId":2,"apiVersion":"2.0.0","service":"toggle-mute","action":"toggle-mute"}"#,
+                        r#"{"requestId":1,"apiVersion":"2.0.0","service":"toggle-mute","action":"toggle-mute"}"#,
                     );
 
                     write.send(msg).await.unwrap();
@@ -72,32 +75,32 @@ impl TeamsAPI {
 async fn parse_data(json: &str, listener: Arc<HaApi>, teams_states: Arc<TeamsStates>) {
     let answer = json::parse(&json.to_string()).unwrap_or(json::parse("{}").unwrap());
 
-    if answer.has_key("meetingUpdate") {
+    if answer.has_key(JSON_MEETING_UPDATE) {
         // If we do not have the key then we assume the API is not yet activated, so we sent a command hoping there is a meeting
-        if !answer["meetingUpdate"].has_key("meetingState") {}
+        if !answer[JSON_MEETING_UPDATE].has_key(JSON_MEETING_STATE) {}
 
-        let new_in_meeting = answer["meetingUpdate"]["meetingState"]["isInMeeting"]
+        let new_in_meeting = answer[JSON_MEETING_UPDATE][JSON_MEETING_STATE][JSON_IS_IN_MEETING]
             .as_bool()
             .unwrap_or_else(|| {
-                error!("Unable to locate isInMeeting variable in JSON");
+                error!("Unable to locate {} variable in JSON", JSON_IS_VIDEO_ON);
                 false
             });
 
-        let new_camera_on = answer["meetingUpdate"]["meetingState"]["isCameraOn"]
+        let new_video_on = answer[JSON_MEETING_UPDATE][JSON_MEETING_STATE][JSON_IS_VIDEO_ON]
             .as_bool()
             .unwrap_or_else(|| {
-                error!("Unable to locate isCameraOn variable in JSON");
+                error!("Unable to locate {} variable in JSON", JSON_IS_VIDEO_ON);
                 false
             });
 
         if (teams_states
-            .in_meeting
+            .is_in_meeting
             .swap(new_in_meeting, Ordering::Relaxed)
             != new_in_meeting)
             || (teams_states
-                .camera_on
+                .is_video_on
                 .swap(new_in_meeting, Ordering::Relaxed)
-                != new_camera_on)
+                != new_video_on)
         {
             listener.notify_changed(&teams_states).await;
         }

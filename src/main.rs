@@ -71,7 +71,6 @@ async fn run(_conf: Configuration) {
 
 // todo: fix icon color
 // todo: ensure Teams connection can be lost and reconnected since it is WS and not REST
-// todo: encrypt tokens
 // todo: doc, take some from previous project
 // todo: translations & language config
 // todo: try to trigger an initial status response, or at least a update_ha to set icons and labels

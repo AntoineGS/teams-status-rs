@@ -49,8 +49,8 @@ impl HaApi {
     }
 
     pub async fn notify_changed(&self, teams_status: &TeamsStates) {
-        let in_meeting = &*bool_to_str(teams_status.in_meeting.load(Ordering::Relaxed));
-        let icon = if teams_status.in_meeting.load(Ordering::Relaxed) {
+        let in_meeting = &*bool_to_str(teams_status.is_in_meeting.load(Ordering::Relaxed));
+        let icon = if teams_status.is_in_meeting.load(Ordering::Relaxed) {
             &self.ha_configuration.icons.in_a_meeting
         } else {
             &self.ha_configuration.icons.not_in_a_meeting
@@ -63,17 +63,17 @@ impl HaApi {
         )
         .await;
 
-        let camera_on = &*bool_to_str(teams_status.camera_on.load(Ordering::Relaxed));
-        let icon = if teams_status.camera_on.load(Ordering::Relaxed) {
-            &self.ha_configuration.icons.camera_on
+        let camera_on = &*bool_to_str(teams_status.is_video_on.load(Ordering::Relaxed));
+        let icon = if teams_status.is_video_on.load(Ordering::Relaxed) {
+            &self.ha_configuration.icons.video_on
         } else {
-            &self.ha_configuration.icons.camera_off
+            &self.ha_configuration.icons.video_off
         };
         self.update_ha(
             camera_on,
             icon,
-            &self.ha_configuration.entities.camera_friendly_name,
-            &self.ha_configuration.entities.camera_id,
+            &self.ha_configuration.entities.video_friendly_name,
+            &self.ha_configuration.entities.video_id,
         )
         .await;
     }

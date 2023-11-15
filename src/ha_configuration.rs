@@ -9,21 +9,21 @@ pub const HA_CAMERA_OFF: &str = "Camera Off";
 pub const HA_ENTITIES: &str = "Home Assistant Entities";
 pub const HA_MEETING_ID: &str = "Meeting Id";
 pub const HA_MEETING_FRIENDLY_NAME: &str = "Meeting Friendly Name";
-pub const HA_CAMERA_ID: &str = "Camera Id";
-pub const HA_CAMERA_FRIENDLY_NAME: &str = "Camera Friendly Name";
+pub const HA_VIDEO_ID: &str = "Video Id";
+pub const HA_VIDEO_FRIENDLY_NAME: &str = "Video Friendly Name";
 
 pub struct HaIcons {
     pub in_a_meeting: String,
     pub not_in_a_meeting: String,
-    pub camera_on: String,
-    pub camera_off: String,
+    pub video_on: String,
+    pub video_off: String,
 }
 
 pub struct HaEntities {
     pub meeting_id: String,
     pub meeting_friendly_name: String,
-    pub camera_id: String,
-    pub camera_friendly_name: String,
+    pub video_id: String,
+    pub video_friendly_name: String,
 }
 
 pub struct HaConfiguration {
@@ -37,15 +37,15 @@ pub fn create_ha_configuration() -> HaConfiguration {
     let ha_icons = HaIcons {
         in_a_meeting: "mdi:phone-in-talk".to_string(),
         not_in_a_meeting: "mdi:phone-off".to_string(),
-        camera_on: "mdi:camera".to_string(),
-        camera_off: "mdi:camera-off".to_string(),
+        video_on: "mdi:camera".to_string(),
+        video_off: "mdi:camera-off".to_string(),
     };
 
     let ha_entities = HaEntities {
         meeting_id: "binary_sensor.teams_meeting".to_string(),
         meeting_friendly_name: "Teams Meeting".to_string(),
-        camera_id: "binary_sensor.teams_camera".to_string(),
-        camera_friendly_name: "Teams Camera".to_string(),
+        video_id: "binary_sensor.teams_video".to_string(),
+        video_friendly_name: "Teams Video".to_string(),
     };
 
     HaConfiguration {

@@ -1,7 +1,7 @@
 use crate::ha_configuration::{
-    create_ha_configuration, HaConfiguration, HA_CAMERA_FRIENDLY_NAME, HA_CAMERA_ID, HA_CAMERA_OFF,
-    HA_CAMERA_ON, HA_ENTITIES, HA_ICONS, HA_IN_A_MEETING, HA_LONG_LIVE_TOKEN,
-    HA_MEETING_FRIENDLY_NAME, HA_MEETING_ID, HA_NOT_IN_A_MEETING, HA_URL, HOME_ASSISTANT,
+    create_ha_configuration, HaConfiguration, HA_CAMERA_OFF, HA_CAMERA_ON, HA_ENTITIES, HA_ICONS,
+    HA_IN_A_MEETING, HA_LONG_LIVE_TOKEN, HA_MEETING_FRIENDLY_NAME, HA_MEETING_ID,
+    HA_NOT_IN_A_MEETING, HA_URL, HA_VIDEO_FRIENDLY_NAME, HA_VIDEO_ID, HOME_ASSISTANT,
 };
 use crate::teams_configuration::{
     create_teams_configuration, TeamsConfiguration, TEAMS, TEAMS_URL,
@@ -46,8 +46,8 @@ fn load_configuration(conf: &mut Configuration) {
                 Some(HA_ICONS) => match k {
                     HA_IN_A_MEETING => conf.ha.icons.in_a_meeting = v.to_string(),
                     HA_NOT_IN_A_MEETING => conf.ha.icons.not_in_a_meeting = v.to_string(),
-                    HA_CAMERA_ON => conf.ha.icons.camera_on = v.to_string(),
-                    HA_CAMERA_OFF => conf.ha.icons.camera_off = v.to_string(),
+                    HA_CAMERA_ON => conf.ha.icons.video_on = v.to_string(),
+                    HA_CAMERA_OFF => conf.ha.icons.video_off = v.to_string(),
                     _ => { /* We just ignore incorrect configs */ }
                 },
                 Some(HA_ENTITIES) => match k {
@@ -55,10 +55,8 @@ fn load_configuration(conf: &mut Configuration) {
                     HA_MEETING_FRIENDLY_NAME => {
                         conf.ha.entities.meeting_friendly_name = v.to_string()
                     }
-                    HA_CAMERA_ID => conf.ha.entities.camera_id = v.to_string(),
-                    HA_CAMERA_FRIENDLY_NAME => {
-                        conf.ha.entities.camera_friendly_name = v.to_string()
-                    }
+                    HA_VIDEO_ID => conf.ha.entities.video_id = v.to_string(),
+                    HA_VIDEO_FRIENDLY_NAME => conf.ha.entities.video_friendly_name = v.to_string(),
                     _ => { /* We just ignore incorrect configs */ }
                 },
                 Some(TEAMS) => match k {
@@ -93,10 +91,10 @@ fn save_ha_configuration(conf: &Configuration) {
             HA_MEETING_FRIENDLY_NAME,
             &conf.ha.entities.meeting_friendly_name,
         )
-        .set(HA_CAMERA_ID, &conf.ha.entities.camera_id)
+        .set(HA_VIDEO_ID, &conf.ha.entities.video_id)
         .set(
-            HA_CAMERA_FRIENDLY_NAME,
-            &conf.ha.entities.camera_friendly_name,
+            HA_VIDEO_FRIENDLY_NAME,
+            &conf.ha.entities.video_friendly_name,
         );
     ini.write_to_file("conf.ini").unwrap();
 }
