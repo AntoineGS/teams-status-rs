@@ -23,7 +23,7 @@ impl HaApi {
     }
 
     /* friendly_name is needed as API calls wipe the configured name */
-    pub async fn update_ha(&self, state: &str, icon: &str, friendly_name: &str, entity_id: &str) {
+    async fn update_ha(&self, state: &str, icon: &str, friendly_name: &str, entity_id: &str) {
         let api_status = self.client.get_api_status().await.unwrap();
 
         if api_status.message != "API running." {
@@ -48,9 +48,9 @@ impl HaApi {
         }
     }
 
-    pub async fn notify_changed(&self, teams_status: &TeamsStates) {
-        let in_meeting = &*bool_to_str(teams_status.is_in_meeting.load(Ordering::Relaxed));
-        let icon = if teams_status.is_in_meeting.load(Ordering::Relaxed) {
+    pub async fn notify_changed(&self, teams_states: &TeamsStates) {
+        let in_meeting = &*bool_to_str(teams_states.is_in_meeting.load(Ordering::Relaxed));
+        let icon = if teams_states.is_in_meeting.load(Ordering::Relaxed) {
             &self.ha_configuration.icons.in_a_meeting
         } else {
             &self.ha_configuration.icons.not_in_a_meeting
@@ -63,8 +63,8 @@ impl HaApi {
         )
         .await;
 
-        let camera_on = &*bool_to_str(teams_status.is_video_on.load(Ordering::Relaxed));
-        let icon = if teams_status.is_video_on.load(Ordering::Relaxed) {
+        let camera_on = &*bool_to_str(teams_states.is_video_on.load(Ordering::Relaxed));
+        let icon = if teams_states.is_video_on.load(Ordering::Relaxed) {
             &self.ha_configuration.icons.video_on
         } else {
             &self.ha_configuration.icons.video_off

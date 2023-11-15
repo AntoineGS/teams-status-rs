@@ -50,12 +50,19 @@ impl TeamsAPI {
         let url_local = url::Url::parse(&self.url).unwrap();
         let (ws_stream, _) = connect_async(url_local).await.expect("Failed to connect");
         let (mut write, read) = ws_stream.split();
+        let force_update = Arc::new(AtomicBool::new(true));
         let ws_to_parser = {
             read.for_each(|message| async {
                 let data = &message.unwrap().into_data();
                 let json = String::from_utf8_lossy(data);
                 info!("{}", json);
-                parse_data(&json, listener.clone(), self.teams_states.clone()).await;
+                parse_data(
+                    &json,
+                    listener.clone(),
+                    self.teams_states.clone(),
+                    force_update.clone(),
+                )
+                .await;
             })
         };
 
@@ -83,7 +90,12 @@ impl TeamsAPI {
     }
 }
 
-async fn parse_data(json: &str, listener: Arc<HaApi>, teams_states: Arc<TeamsStates>) {
+async fn parse_data(
+    json: &str,
+    listener: Arc<HaApi>,
+    teams_states: Arc<TeamsStates>,
+    force_update: Arc<AtomicBool>,
+) {
     let answer = json::parse(&json.to_string()).unwrap_or(json::parse("{}").unwrap());
 
     if answer.has_key(JSON_MEETING_UPDATE) {
@@ -101,14 +113,19 @@ async fn parse_data(json: &str, listener: Arc<HaApi>, teams_states: Arc<TeamsSta
                 false
             });
 
-        if (teams_states
+        let is_in_meeting_changed = teams_states
             .is_in_meeting
             .swap(new_in_meeting, Ordering::Relaxed)
-            != new_in_meeting)
-            || (teams_states
-                .is_video_on
-                .swap(new_in_meeting, Ordering::Relaxed)
-                != new_video_on)
+            != new_in_meeting;
+
+        let is_video_on_changed = teams_states
+            .is_video_on
+            .swap(new_video_on, Ordering::Relaxed)
+            != new_video_on;
+
+        if force_update.swap(false, Ordering::Relaxed)
+            || is_in_meeting_changed
+            || is_video_on_changed
         {
             listener.notify_changed(&teams_states).await;
         }
