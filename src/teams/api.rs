@@ -1,8 +1,8 @@
-use crate::ha_api::HaApi;
-use crate::teams_configuration::{
+use crate::home_assistant::api::HaApi;
+use crate::teams::configuration::{
     change_teams_configuration, TeamsConfiguration, TEAMS, TEAMS_API_TOKEN,
 };
-use crate::teams_states::TeamsStates;
+use crate::teams::states::TeamsStates;
 use futures_util::{future, pin_mut, SinkExt, StreamExt};
 use log::{error, info};
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -33,14 +33,14 @@ impl TeamsAPI {
             "".to_string()
         };
         let url = format!(
-            "{url}?{api_token}protocol-version=2.0.0&manufacturer=HA-Integration&device=MyPC&app=teams-status-rs&app-version=1.0", 
+            "{url}?{api_token}protocol-version=2.0.0&manufacturer=HA-Integration&device=MyPC&app=teams-status-rs&app-version=1.0",
             url = conf.url,
             api_token = api_token);
 
         Self { teams_states, url }
     }
 
-    // todo: HaApi creates a dependency on Home Assistant, could be fun to abstract it
+    // todo: HaApi creates a dependency on Home Assistant, could be fun to abstract it, waiting on rust 1.75 for async traits
     pub async fn start_listening(
         &self,
         listener: Arc<HaApi>,
@@ -135,50 +135,5 @@ async fn parse_data(
             TEAMS_API_TOKEN,
             &answer[JSON_TOKEN_REFRESH].to_string(),
         )
-    }
-}
-
-// mod tests {
-//     #[test]
-//     #[should_panic(expected = "TSAPITOKEN")]
-//     fn new_missing_api_key_will_panic() {
-//         std::env::set_var(ENV_API_TOKEN, "");
-//         TeamsAPI::new(Arc::new(DefaultListener {}));
-//     }
-//
-//     #[test]
-//     fn listen_test() {
-//         let mut api = TeamsAPI::new(Arc::new(DefaultListener {}));
-//         api.listen_loop();
-//     }
-// }
-#[actix_rt::test]
-async fn update_ha_state_will_match() {
-    dotenv().ok();
-    let random_state = &*Utc::now().to_string();
-    let ha_api = HaApi::new();
-
-    ha_api
-        .update_ha(
-            random_state,
-            "Microsoft Teams Activity",
-            "mdi:phone",
-            "sensor.teams_activity",
-        )
-        .await;
-
-    let states_entity = ha_api
-        .client
-        .get_states_of_entity("sensor.teams_activity")
-        .await
-        .unwrap();
-
-    if let Some(state) = states_entity.state {
-        match state {
-            StateEnum::String(x) => assert_eq!(random_state, x),
-            _ => panic!("Invalid data type detected for entity state."),
-        }
-    } else {
-        panic!("Error reading entity states.")
     }
 }

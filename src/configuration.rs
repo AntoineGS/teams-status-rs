@@ -1,9 +1,9 @@
-use crate::ha_configuration::{
+use crate::home_assistant::configuration::{
     create_ha_configuration, HaConfiguration, HA_ENTITIES, HA_ICONS, HA_IN_A_MEETING,
     HA_LONG_LIVE_TOKEN, HA_MEETING_FRIENDLY_NAME, HA_MEETING_ID, HA_NOT_IN_A_MEETING, HA_URL,
     HA_VIDEO_FRIENDLY_NAME, HA_VIDEO_ID, HA_VIDEO_OFF, HA_VIDEO_ON, HOME_ASSISTANT,
 };
-use crate::teams_configuration::{
+use crate::teams::configuration::{
     create_teams_configuration, TeamsConfiguration, TEAMS, TEAMS_API_TOKEN, TEAMS_URL,
 };
 use crate::utils::{decrypt_if_needed, encrypt};

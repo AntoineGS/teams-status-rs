@@ -1,5 +1,5 @@
-use crate::ha_configuration::HaConfiguration;
-use crate::teams_states::TeamsStates;
+use crate::home_assistant::configuration::HaConfiguration;
+use crate::teams::states::TeamsStates;
 use crate::utils::bool_to_str;
 use home_assistant_rest::post::StateParams;
 use home_assistant_rest::Client;

@@ -1,12 +1,9 @@
 #![windows_subsystem = "windows"]
 mod configuration;
-mod ha_api;
-mod ha_configuration;
-mod teams_api;
-mod teams_configuration;
-mod teams_states;
+mod home_assistant;
+mod teams;
 mod traits;
-mod tray_windows;
+mod tray;
 mod utils;
 
 use std::process::exit;
@@ -15,10 +12,10 @@ use std::sync::Arc;
 use std::time;
 
 use crate::configuration::get_configuration;
-use crate::teams_api::TeamsAPI;
-use crate::tray_windows::create_tray;
+use crate::teams::api::TeamsAPI;
+use crate::tray::create_tray;
 use dotenv::dotenv;
-use ha_api::HaApi;
+use home_assistant::api::HaApi;
 use log::{info, LevelFilter};
 use log4rs::append::file::FileAppender;
 use log4rs::config::{Appender, Root};
