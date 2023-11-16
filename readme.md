@@ -14,6 +14,14 @@
 - There is currently no recovery process if the connection to Teams is unavailable upon launch or closed while it is active, you will need to restart the application (which will most likely have closed)
 
 # Example JSONs from MS Teams
+### API Connection Prior to Getting Token
+```json
+ws://localhost:8124?protocol-version=2.0.0&manufacturer=AntoineGS&device=HomeAssistant&app=MS-Teams-Websocket&app-version=1.0
+```
+### API Connection With Token
+```json
+ws://localhost:8124?token=FDUHINFHUSIDHNFSDFUIDSFHNUDSI&protocol-version=2.0.0&manufacturer=AntoineGS&device=HomeAssistant&app=MS-Teams-Websocket&app-version=1.0
+```
 ### Teams -> Client Update
 ```json
 {
