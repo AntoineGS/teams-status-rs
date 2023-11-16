@@ -20,6 +20,7 @@ futures-util = "0.3.29"
 futures-channel = "0.3.29"
 log4rs = "1.2.0"
 rust-ini = "0.20.0"
+magic-crypt = "3.1.13"
 
 [build-dependencies]
 windres = "0.2.2"

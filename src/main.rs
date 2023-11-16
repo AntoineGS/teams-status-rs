@@ -12,7 +12,6 @@ mod utils;
 use std::process::exit;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-use std::thread::sleep;
 use std::time;
 
 use crate::configuration::get_configuration;
@@ -64,13 +63,14 @@ async fn run() {
         teams_api
             .start_listening(ha_api, is_running.clone(), toggle_mute.clone())
             .await;
+        // will be for handling a retry loop, rn it does nothing more than slow the exit
         tokio::time::sleep(one_second).await;
     }
 }
 
-// todo: fix icon color
 // todo: ensure Teams connection can be lost and reconnected since it is WS and not REST
-// todo: translations & language config
-// todo: logging
-// todo: write new tests and pass existing ones
+// todo: translations & language config?
+// todo: get a better icon
 // todo: auto create versions and packages when creating tags on GitHub (if doable)
+// todo: write new tests and pass existing ones
+// todo: improve utils.rs encryption

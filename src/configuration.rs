@@ -6,6 +6,7 @@ use crate::ha_configuration::{
 use crate::teams_configuration::{
     create_teams_configuration, TeamsConfiguration, TEAMS, TEAMS_API_TOKEN, TEAMS_URL,
 };
+use crate::utils::{decrypt_if_needed, encrypt};
 use ini::Ini;
 use log::info;
 
@@ -39,7 +40,7 @@ fn load_configuration(conf: &mut Configuration) {
 
             match sec {
                 Some(HOME_ASSISTANT) => match k {
-                    HA_LONG_LIVE_TOKEN => conf.ha.long_live_token = v.to_string(),
+                    HA_LONG_LIVE_TOKEN => conf.ha.long_live_token = decrypt_if_needed(v),
                     HA_URL => conf.ha.url = v.to_string(),
                     _ => { /* We just ignore incorrect configs */ }
                 },
@@ -61,7 +62,7 @@ fn load_configuration(conf: &mut Configuration) {
                 },
                 Some(TEAMS) => match k {
                     TEAMS_URL => conf.teams.url = v.to_string(),
-                    TEAMS_API_TOKEN => conf.teams.api_token = v.to_string(),
+                    TEAMS_API_TOKEN => conf.teams.api_token = decrypt_if_needed(v),
                     _ => { /* We just ignore incorrect configs */ }
                 },
                 _ => { /* We just ignore incorrect configs */ }
@@ -80,10 +81,10 @@ fn save_ha_configuration(conf: &Configuration) {
     let mut ini = Ini::new();
     ini.with_section(Some(TEAMS))
         .set(TEAMS_URL, &conf.teams.url)
-        .set(TEAMS_API_TOKEN, &conf.teams.api_token);
+        .set(TEAMS_API_TOKEN, encrypt(&conf.teams.api_token));
     ini.with_section(Some(HOME_ASSISTANT))
         .set(HA_URL, &conf.ha.url)
-        .set(HA_LONG_LIVE_TOKEN, &conf.ha.long_live_token);
+        .set(HA_LONG_LIVE_TOKEN, encrypt(&conf.ha.long_live_token));
     ini.with_section(Some(HA_ICONS))
         .set(HA_IN_A_MEETING, &conf.ha.icons.in_a_meeting)
         .set(HA_NOT_IN_A_MEETING, &conf.ha.icons.not_in_a_meeting);
