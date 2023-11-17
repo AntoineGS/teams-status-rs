@@ -23,7 +23,7 @@
 - This integration only supports the New Teams
 - Logging is done in output.log, and rolls over at 10mb, keeping a maximum of two files
 
-# Example JSONs from MS Teams
+# Example Data
 ### API Connection Prior to Getting Token
 ```
 ws://localhost:8124?protocol-version=2.0.0&manufacturer=AntoineGS&device=HomeAssistant&app=MS-Teams-Websocket&app-version=1.0
@@ -83,6 +83,14 @@ ws://localhost:8124?token=FDUHINFHUSIDHNFSDFUIDSFHNUDSI&protocol-version=2.0.0&m
 ```json
 {
   "tokenRefresh": "529547bd-9f11-4a83-9204-0e655b00fd5e"
+}
+```
+
+### MQTT
+```json
+{
+  "in_meeting": "on",
+  "video_on": "off"
 }
 ```
 
