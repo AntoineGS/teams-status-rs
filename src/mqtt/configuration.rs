@@ -33,7 +33,7 @@ pub fn create_mqtt_configuration() -> MqttConfiguration {
         url: "".to_string(),
         port: 1883,
         topic: "teams-status".to_string(),
-        username: "mosquitto".to_string(),
+        username: "".to_string(),
         password: "".to_string(),
         mqtt_entities,
     }
