@@ -3,6 +3,10 @@ use crate::home_assistant::configuration::{
     HA_LONG_LIVE_TOKEN, HA_MEETING_FRIENDLY_NAME, HA_MEETING_ID, HA_NOT_IN_A_MEETING, HA_URL,
     HA_VIDEO_FRIENDLY_NAME, HA_VIDEO_ID, HA_VIDEO_OFF, HA_VIDEO_ON, HOME_ASSISTANT,
 };
+use crate::mqtt::configuration::{
+    create_mqtt_configuration, MqttConfiguration, MQTT, MQTT_ENTITIES, MQTT_MEETING, MQTT_PASSWORD,
+    MQTT_PORT, MQTT_PORT_DEFAULT, MQTT_TOPIC, MQTT_URL, MQTT_USERNAME, MQTT_VIDEO,
+};
 use crate::teams::configuration::{
     create_teams_configuration, TeamsConfiguration, TEAMS, TEAMS_API_TOKEN, TEAMS_URL,
 };
@@ -13,13 +17,16 @@ use log::info;
 pub struct Configuration {
     pub ha: HaConfiguration,
     pub teams: TeamsConfiguration,
+    pub mqtt: MqttConfiguration,
 }
 
-pub fn get_configuration() -> Configuration {
+pub fn get_configuration(save_configuration: bool) -> Configuration {
     let mut conf = create_configuration();
     load_configuration(&mut conf);
-    // We recreate the file each time in case we introduce new values or configs
-    save_ha_configuration(&conf);
+    // We recreate the file in case we introduce new values or configs
+    if save_configuration {
+        save_ha_configuration(&conf);
+    };
     conf
 }
 
@@ -65,6 +72,19 @@ fn load_configuration(conf: &mut Configuration) {
                     TEAMS_API_TOKEN => conf.teams.api_token = decrypt_if_needed(v),
                     _ => { /* We just ignore incorrect configs */ }
                 },
+                Some(MQTT) => match k {
+                    MQTT_URL => conf.mqtt.url = v.to_string(),
+                    MQTT_PORT => conf.mqtt.port = v.parse().unwrap_or(MQTT_PORT_DEFAULT),
+                    MQTT_TOPIC => conf.mqtt.topic = v.to_string(),
+                    MQTT_USERNAME => conf.mqtt.username = v.to_string(),
+                    MQTT_PASSWORD => conf.mqtt.password = decrypt_if_needed(v),
+                    _ => { /* We just ignore incorrect configs */ }
+                },
+                Some(MQTT_ENTITIES) => match k {
+                    MQTT_MEETING => conf.mqtt.mqtt_entities.meeting = v.to_string(),
+                    MQTT_VIDEO => conf.mqtt.mqtt_entities.video = v.to_string(),
+                    _ => { /* We just ignore incorrect configs */ }
+                },
                 _ => { /* We just ignore incorrect configs */ }
             }
         }
@@ -75,6 +95,7 @@ fn create_configuration() -> Configuration {
     Configuration {
         ha: create_ha_configuration(),
         teams: create_teams_configuration(),
+        mqtt: create_mqtt_configuration(),
     }
 }
 fn save_ha_configuration(conf: &Configuration) {
@@ -99,5 +120,14 @@ fn save_ha_configuration(conf: &Configuration) {
             HA_VIDEO_FRIENDLY_NAME,
             &conf.ha.entities.video_friendly_name,
         );
+    ini.with_section(Some(MQTT))
+        .set(MQTT_URL, &conf.mqtt.url)
+        .set(MQTT_PORT, &conf.mqtt.port.to_string())
+        .set(MQTT_TOPIC, &conf.mqtt.topic)
+        .set(MQTT_USERNAME, &conf.mqtt.username)
+        .set(MQTT_PASSWORD, encrypt(&conf.mqtt.password));
+    ini.with_section(Some(MQTT_ENTITIES))
+        .set(MQTT_MEETING, &conf.mqtt.mqtt_entities.meeting)
+        .set(MQTT_VIDEO, &conf.mqtt.mqtt_entities.video);
     ini.write_to_file("conf.ini").unwrap();
 }

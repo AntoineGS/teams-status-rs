@@ -1,12 +1,11 @@
 [package]
 name = "teams_status"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-dotenv = "0.15.0"
 home-assistant-rest = "0.2.0"
 actix-rt = "2.9.0"
 log = "0.4.20"
@@ -21,6 +20,9 @@ futures-channel = "0.3.29"
 log4rs = "1.2.0"
 rust-ini = "0.20.0"
 magic-crypt = "3.1.13"
+rumqttc = "0.23.0"
+serde_json = "1.0.108"
+async-trait = "0.1.74"
 
 [build-dependencies]
 windres = "0.2.2"

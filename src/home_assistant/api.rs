@@ -1,6 +1,9 @@
+use crate::error::Error;
 use crate::home_assistant::configuration::HaConfiguration;
 use crate::teams::states::TeamsStates;
+use crate::traits::Listener;
 use crate::utils::bool_to_str;
+use async_trait::async_trait;
 use home_assistant_rest::post::StateParams;
 use home_assistant_rest::Client;
 use log::error;
@@ -13,13 +16,12 @@ pub struct HaApi {
 }
 
 impl HaApi {
-    pub fn new(ha_configuration: HaConfiguration) -> Self {
-        let client =
-            Client::new(&*ha_configuration.url, &*ha_configuration.long_live_token).unwrap();
-        Self {
+    pub fn new(ha_configuration: HaConfiguration) -> Result<Self, Error> {
+        let client = Client::new(&*ha_configuration.url, &*ha_configuration.long_live_token)?;
+        Ok(Self {
             client,
             ha_configuration,
-        }
+        })
     }
 
     /* friendly_name is needed as API calls wipe the configured name */
@@ -47,8 +49,11 @@ impl HaApi {
             error!("{}", post_states_res.unwrap_err());
         }
     }
+}
 
-    pub async fn notify_changed(&self, teams_states: &TeamsStates) {
+#[async_trait]
+impl Listener for HaApi {
+    async fn notify_changed(&self, teams_states: &TeamsStates) {
         let in_meeting = &*bool_to_str(teams_states.is_in_meeting.load(Ordering::Relaxed));
         let icon = if teams_states.is_in_meeting.load(Ordering::Relaxed) {
             &self.ha_configuration.icons.in_a_meeting
@@ -63,76 +68,18 @@ impl HaApi {
         )
         .await;
 
-        let camera_on = &*bool_to_str(teams_states.is_video_on.load(Ordering::Relaxed));
+        let video_on = &*bool_to_str(teams_states.is_video_on.load(Ordering::Relaxed));
         let icon = if teams_states.is_video_on.load(Ordering::Relaxed) {
             &self.ha_configuration.icons.video_on
         } else {
             &self.ha_configuration.icons.video_off
         };
         self.update_ha(
-            camera_on,
+            video_on,
             icon,
             &self.ha_configuration.entities.video_friendly_name,
             &self.ha_configuration.entities.video_id,
         )
         .await;
     }
-}
-
-#[allow(unused_imports)]
-mod tests {
-    // use crate::ha_api::{HaApi, ENV_HA_LONG_LIVE_TOKEN, ENV_HA_URL};
-    // use chrono::Utc;
-    // use dotenv::dotenv;
-    // use home_assistant_rest::get::StateEnum;
-    //
-    // // Cannot use consts in should_panic, see:
-    // // https://internals.rust-lang.org/t/passing-variables-or-constants-as-arguments-to-the-should-panic-expected-attribute-macro/16695
-    // #[test]
-    // #[should_panic(expected = "TSHATOKEN")]
-    // fn new_token_not_set_will_panic() {
-    //     std::env::set_var(ENV_HA_URL, "1234");
-    //     std::env::set_var(ENV_HA_LONG_LIVE_TOKEN, "");
-    //     HaApi::new();
-    // }
-    //
-    // #[test]
-    // #[should_panic(expected = "TSHAURL")]
-    // fn new_url_not_set_will_panic() {
-    //     std::env::set_var(ENV_HA_URL, "");
-    //     std::env::set_var(ENV_HA_LONG_LIVE_TOKEN, "1234");
-    //     HaApi::new();
-    // }
-
-    // I have not found a way to query friendly_name and icon to confirm this test
-    // #[actix_rt::test]
-    // async fn update_ha_state_will_match() {
-    //     dotenv().ok();
-    //     let random_state = &*Utc::now().to_string();
-    //     let ha_api = HaApi::new();
-    //
-    //     ha_api
-    //         .update_ha(
-    //             random_state,
-    //             "Microsoft Teams Activity",
-    //             "mdi:phone",
-    //             "sensor.teams_activity",
-    //         )
-    //         .await;
-    //
-    //     let states_entity = ha_api
-    //         .client
-    //         .get_states_of_entity("sensor.teams_activity")
-    //         .await
-    //         .unwrap();
-    //
-    //     if let Some(state) = states_entity.state {
-    //         match state {
-    //             StateEnum::String(x) => assert_eq!(random_state, x),
-    //             _ => panic!("Invalid data type detected for entity state."),
-    //         }
-    //     } else {
-    //         panic!("Error reading entity states.")
-    //     }
-    // }
 }

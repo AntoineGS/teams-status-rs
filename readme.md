@@ -1,17 +1,27 @@
 # Configuration
-- Run the application once, it will generate the ini file (conf.ini) in the same folder as the .exe
+- Launch the application, it will generate the ini file (conf.ini) in the same folder as the .exe
 - In Microsoft Teams, enable the Third-Party API ([see Microsoft documentation](https://support.microsoft.com/en-us/office/connect-to-third-party-devices-in-microsoft-teams-aabca9f2-47bb-407f-9f9b-81a104a883d6?storagetype=live))
-- In Home Assistant, generate a Long-Lived Access Token ([see HA documentation](https://developers.home-assistant.io/docs/auth_api/#long-lived-access-token))
-  - Paste it into the conf.ini
-- Run the application again
-  - It will create the entities in HA automatically 
+  - The API Token will be generated automatically by the integration, so leave it blank in the configuration file
+- Decide on whether you will use MQTT or the direct HA integration, setting the URL to the integration will activate it, but you can only use one or the other.
+- MQTT
+  - Set the URL
+  - Set the username and password if applicable
+  - Double-check the other configurations, they have default values, but you may want/need to change them
+- HA (Home Assistant)
+  - Set the URL
+  - In Home Assistant, generate a Long-Lived Access Token ([see HA documentation](https://developers.home-assistant.io/docs/auth_api/#long-lived-access-token))
+    - Paste it into the conf.ini
+  - Double-check the other configurations, they have default values, but you may want/need to change them
+- Run the application again if it has closed due to missing configuration, otherwise it might just pick up the configuration and start working once the ini file is fully configured
+  - It will create the entities in HA automatically when it connects (if using this integration)
   - Start a meeting (you can be the only person in it)
   - From the tray icon, click on Toggle Mute
   - You will get a prompt in Teams to allow the application to use the API, if you do not click on time Teams will close the prompt. Simply click on Toggle Mute again.
 
 # Notices
-- This integration only supports the New Teams.
-- There is currently no recovery process if the connection to Teams is unavailable upon launch or closed while it is active, you will need to restart the application (which will most likely have closed)
+- Pull Requests, Issues, Feature Requests are all welcomed
+- This integration only supports the New Teams
+- Logging is done in output.log, and rolls over at 10mb, keeping a maximum of two files
 
 # Example JSONs from MS Teams
 ### API Connection Prior to Getting Token

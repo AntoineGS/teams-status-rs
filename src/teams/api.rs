@@ -1,8 +1,9 @@
-use crate::home_assistant::api::HaApi;
+use crate::error::Error;
 use crate::teams::configuration::{
     change_teams_configuration, TeamsConfiguration, TEAMS, TEAMS_API_TOKEN,
 };
 use crate::teams::states::TeamsStates;
+use crate::traits::Listener;
 use futures_util::{future, pin_mut, SinkExt, StreamExt};
 use log::{error, info};
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -40,13 +41,12 @@ impl TeamsAPI {
         Self { teams_states, url }
     }
 
-    // todo: HaApi creates a dependency on Home Assistant, could be fun to abstract it, waiting on rust 1.75 for async traits
     pub async fn start_listening(
         &self,
-        listener: Arc<HaApi>,
+        listener: Arc<&dyn Listener>,
         is_running: Arc<AtomicBool>,
         toggle_mute: Arc<AtomicBool>,
-    ) {
+    ) -> Result<(), Error> {
         let url_local = url::Url::parse(&self.url).unwrap();
         let (ws_stream, _) = connect_async(url_local).await.expect("Failed to connect");
         let (mut write, read) = ws_stream.split();
@@ -87,12 +87,13 @@ impl TeamsAPI {
 
         pin_mut!(running_future, ws_to_parser);
         future::select(running_future, ws_to_parser).await;
+        Ok(())
     }
 }
 
 async fn parse_data(
     json: &str,
-    listener: Arc<HaApi>,
+    listener: Arc<&dyn Listener>,
     teams_states: Arc<TeamsStates>,
     force_update: Arc<AtomicBool>,
 ) {
