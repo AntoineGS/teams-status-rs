@@ -22,6 +22,7 @@
 - Pull Requests, Issues, Feature Requests are all welcomed
 - This integration only supports the New Teams
 - Logging is done in output.log, and rolls over at 10mb, keeping a maximum of two files
+- Passwords and keys are encrypted 
 
 # Example Data
 ### API Connection Prior to Getting Token
