@@ -3,6 +3,10 @@ name = "teams_status"
 version = "0.2.0"
 edition = "2021"
 
+[package.metadata.winres]
+ProductName = "Teams Status"
+ProductVersion = "0.2.0"
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
@@ -25,4 +29,4 @@ serde_json = "1.0.108"
 async-trait = "0.1.74"
 
 [build-dependencies]
-windres = "0.2.2"
+winres = "0.1.12"

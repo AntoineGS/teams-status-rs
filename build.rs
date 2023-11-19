@@ -1,5 +1,7 @@
-use windres::Build;
+use winres::WindowsResource;
 
 fn main() {
-    Build::new().compile(".\\teams_status.rc").unwrap();
+    let mut res = WindowsResource::new();
+    res.set_icon("microsoft-teams.ico");
+    res.compile().unwrap();
 }
