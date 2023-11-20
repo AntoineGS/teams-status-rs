@@ -72,17 +72,11 @@ async fn run_apis(
 ) -> Result<(), Error> {
     let conf = get_configuration(save_configuration);
     let teams_api = TeamsAPI::new(&conf.teams);
-    let listener: &dyn Listener;
-    let ha_api: HaApi;
-    let mqtt_api: MqttApi;
-
-    if conf.mqtt.url.is_empty() {
-        ha_api = HaApi::new(conf.ha)?;
-        listener = &ha_api;
+    let listener = if conf.mqtt.url.is_empty() {
+        Box::new(HaApi::new(conf.ha)?)
     } else {
-        mqtt_api = MqttApi::new(conf.mqtt)?;
-        listener = &mqtt_api;
-    }
+        Box::new(MqttApi::new(conf.mqtt)?)
+    };
 
     teams_api
         .start_listening(Arc::new(listener), is_running.clone(), toggle_mute.clone())

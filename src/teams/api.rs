@@ -43,7 +43,7 @@ impl TeamsAPI {
 
     pub async fn start_listening(
         &self,
-        listener: Arc<&dyn Listener>,
+        listener: Arc<Box<dyn Listener>>,
         is_running: Arc<AtomicBool>,
         toggle_mute: Arc<AtomicBool>,
     ) -> Result<(), Error> {
@@ -93,7 +93,7 @@ impl TeamsAPI {
 
 async fn parse_data(
     json: &str,
-    listener: Arc<&dyn Listener>,
+    listener: Arc<Box<dyn Listener>>,
     teams_states: Arc<TeamsStates>,
     force_update: Arc<AtomicBool>,
 ) {
