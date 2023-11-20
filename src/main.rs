@@ -2,6 +2,7 @@
 mod configuration;
 mod error;
 mod home_assistant;
+mod logging;
 mod mqtt;
 mod teams;
 mod traits;
@@ -15,24 +16,17 @@ use std::time;
 
 use crate::configuration::get_configuration;
 use crate::error::Error;
+use crate::logging::initialize_logging;
 use crate::mqtt::api::MqttApi;
 use crate::teams::api::TeamsAPI;
 use crate::traits::Listener;
 use crate::tray::create_tray;
 use home_assistant::api::HaApi;
-use log::{error, info, LevelFilter};
-use log4rs::append::rolling_file::policy::compound::roll::fixed_window::FixedWindowRoller;
-use log4rs::append::rolling_file::policy::compound::trigger::size::SizeTrigger;
-use log4rs::append::rolling_file::policy::compound::CompoundPolicy;
-use log4rs::append::rolling_file::RollingFileAppender;
-use log4rs::config::{Appender, Root};
-use log4rs::encode::pattern::PatternEncoder;
-use log4rs::Config;
+use log::{error, info};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    init_logging();
-
+    initialize_logging();
     info!("--------------------");
     info!("Application starting");
 
@@ -54,6 +48,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         if result.is_err() {
             result.unwrap_or_else(|error| error!("Error encountered: {}", error));
 
+            // Give the CPU/user/APIs some time to recover
             if is_running.load(Ordering::Relaxed) {
                 tokio::time::sleep(five_seconds).await;
             }
@@ -61,7 +56,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     info!("Application closing");
-
     exit(0);
 }
 
@@ -83,28 +77,6 @@ async fn run_apis(
         .await?;
 
     Ok(())
-}
-
-fn init_logging() {
-    let fixed_window_roller = FixedWindowRoller::builder()
-        .build("output_old{}.log", 1)
-        .unwrap();
-    let size_limit = 10 * 1024 * 1024;
-    let size_trigger = SizeTrigger::new(size_limit);
-    let compound_policy =
-        CompoundPolicy::new(Box::new(size_trigger), Box::new(fixed_window_roller));
-
-    let logfile = RollingFileAppender::builder()
-        .encoder(Box::new(PatternEncoder::new("{d:<36} {l} {t} - {m}{n}")))
-        .build("output.log", Box::new(compound_policy))
-        .unwrap();
-
-    let log_config = Config::builder()
-        .appender(Appender::builder().build("logfile", Box::new(logfile)))
-        .build(Root::builder().appender("logfile").build(LevelFilter::Info))
-        .unwrap();
-
-    log4rs::init_config(log_config).unwrap();
 }
 
 // todo: translations & language config?
