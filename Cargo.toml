@@ -1,11 +1,11 @@
 [package]
 name = "teams_status"
-version = "0.2.1"
+version = "0.2.2"
 edition = "2021"
 
 [package.metadata.winres]
 ProductName = "Teams Status"
-ProductVersion = "0.2.1"
+ProductVersion = "0.2.2"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -30,3 +30,7 @@ async-trait = "0.1.74"
 
 [build-dependencies]
 winres = "0.1.12"
+
+[profile.release-unoptimized]
+inherits = "release"
+opt-level = 0
