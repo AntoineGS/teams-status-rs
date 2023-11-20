@@ -66,7 +66,7 @@ async fn run_apis(
 ) -> Result<(), Error> {
     let conf = get_configuration(save_configuration);
     let teams_api = TeamsAPI::new(&conf.teams);
-    let listener = if conf.mqtt.url.is_empty() {
+    let listener: Box<dyn Listener> = if conf.mqtt.url.is_empty() {
         Box::new(HaApi::new(conf.ha)?)
     } else {
         Box::new(MqttApi::new(conf.mqtt)?)
