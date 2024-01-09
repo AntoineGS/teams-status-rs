@@ -19,7 +19,7 @@ use crate::mqtt::api::MqttApi;
 use crate::teams::api::TeamsAPI;
 use crate::traits::Listener;
 use crate::tray::create_tray;
-use anyhow::{Context, Result};
+use anyhow::Result;
 use home_assistant::api::HaApi;
 use log::{error, info};
 
