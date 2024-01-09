@@ -1,4 +1,3 @@
-use crate::error::Error;
 use crate::mqtt::configuration::MqttConfiguration;
 use crate::teams::states::TeamsStates;
 use crate::traits::Listener;
@@ -16,7 +15,7 @@ pub struct MqttApi {
 }
 
 impl MqttApi {
-    pub fn new(mqtt_configuration: MqttConfiguration) -> Result<Self, Error> {
+    pub fn new(mqtt_configuration: MqttConfiguration) -> anyhow::Result<Self> {
         let mut mqtt_options = MqttOptions::new(
             "teams-status",
             &mqtt_configuration.url,
@@ -39,7 +38,7 @@ impl MqttApi {
 
 #[async_trait]
 impl Listener for MqttApi {
-    async fn notify_changed(&self, teams_states: &TeamsStates) {
+    async fn notify_changed(&self, teams_states: &TeamsStates) -> anyhow::Result<()> {
         let in_meeting = &*bool_to_str(teams_states.is_in_meeting.load(Ordering::Relaxed));
         let video_on = &*bool_to_str(teams_states.is_video_on.load(Ordering::Relaxed));
 
@@ -57,7 +56,8 @@ impl Listener for MqttApi {
                 true,
                 payload.to_string(),
             )
-            .await
-            .unwrap();
+            .await?;
+
+        Ok(())
     }
 }

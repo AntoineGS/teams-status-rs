@@ -1,9 +1,9 @@
-use crate::error::Error;
 use crate::teams::configuration::{
     change_teams_configuration, TeamsConfiguration, TEAMS, TEAMS_API_TOKEN,
 };
 use crate::teams::states::TeamsStates;
 use crate::traits::Listener;
+use anyhow::Context;
 use futures_util::{future, pin_mut, SinkExt, StreamExt};
 use log::{error, info};
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -46,23 +46,31 @@ impl TeamsAPI {
         listener: Arc<Box<dyn Listener>>,
         is_running: Arc<AtomicBool>,
         toggle_mute: Arc<AtomicBool>,
-    ) -> Result<(), Error> {
-        let url_local = url::Url::parse(&self.url).unwrap();
-        let (ws_stream, _) = connect_async(url_local).await.expect("Failed to connect");
+    ) -> anyhow::Result<()> {
+        let url_local = url::Url::parse(&self.url)?;
+        let (ws_stream, _) = connect_async(url_local)
+            .await
+            .with_context(|| "Failed to connect")?;
         let (mut write, read) = ws_stream.split();
         let force_update = Arc::new(AtomicBool::new(true));
         let ws_to_parser = {
             read.for_each(|message| async {
-                let data = &message.unwrap().into_data();
-                let json = String::from_utf8_lossy(data);
-                info!("{}", json);
-                parse_data(
-                    &json,
-                    listener.clone(),
-                    self.teams_states.clone(),
-                    force_update.clone(),
-                )
-                .await;
+                if message.is_ok() {
+                    let data = &message.unwrap().into_data();
+                    let json = String::from_utf8_lossy(data);
+                    info!("{}", json);
+                    let parse_result = parse_data(
+                        &json,
+                        listener.clone(),
+                        self.teams_states.clone(),
+                        force_update.clone(),
+                    )
+                    .await;
+
+                    if parse_result.is_err() {
+                        error!("{}", parse_result.unwrap_err())
+                    }
+                }
             })
         };
 
@@ -96,7 +104,7 @@ async fn parse_data(
     listener: Arc<Box<dyn Listener>>,
     teams_states: Arc<TeamsStates>,
     force_update: Arc<AtomicBool>,
-) {
+) -> anyhow::Result<()> {
     let answer = json::parse(&json.to_string()).unwrap_or(json::parse("{}").unwrap());
 
     if answer.has_key(JSON_MEETING_UPDATE) {
@@ -128,7 +136,7 @@ async fn parse_data(
             || is_in_meeting_changed
             || is_video_on_changed
         {
-            listener.notify_changed(&teams_states).await;
+            listener.notify_changed(&teams_states).await?;
         }
     } else if answer.has_key(JSON_TOKEN_REFRESH) && !answer[JSON_TOKEN_REFRESH].is_empty() {
         change_teams_configuration(
@@ -137,4 +145,6 @@ async fn parse_data(
             &answer[JSON_TOKEN_REFRESH].to_string(),
         )
     }
+
+    Ok(())
 }

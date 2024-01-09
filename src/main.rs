@@ -15,12 +15,12 @@ use std::sync::Arc;
 use std::time;
 
 use crate::configuration::get_configuration;
-use crate::error::Error;
 use crate::logging::initialize_logging;
 use crate::mqtt::api::MqttApi;
 use crate::teams::api::TeamsAPI;
 use crate::traits::Listener;
 use crate::tray::create_tray;
+use anyhow::{Context, Result};
 use home_assistant::api::HaApi;
 use log::{error, info};
 
@@ -63,7 +63,7 @@ async fn run_apis(
     is_running: Arc<AtomicBool>,
     toggle_mute: Arc<AtomicBool>,
     save_configuration: bool,
-) -> Result<(), Error> {
+) -> Result<()> {
     let conf = get_configuration(save_configuration);
     let teams_api = TeamsAPI::new(&conf.teams);
     let listener: Box<dyn Listener> = if conf.mqtt.url.is_empty() {
