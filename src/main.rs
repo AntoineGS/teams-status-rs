@@ -1,6 +1,5 @@
 #![windows_subsystem = "windows"]
 mod configuration;
-mod error;
 mod home_assistant;
 mod logging;
 mod mqtt;
