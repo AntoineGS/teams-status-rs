@@ -54,7 +54,7 @@ impl Listener for MqttApi {
             .publish(
                 &self.mqtt_configuration.topic,
                 QoS::AtLeastOnce,
-                false,
+                true,
                 payload.to_string(),
             )
             .await
