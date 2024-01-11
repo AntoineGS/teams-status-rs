@@ -5,6 +5,7 @@ use crate::teams::states::TeamsStates;
 use crate::traits::Listener;
 use anyhow::Context;
 use futures_util::{future, pin_mut, SinkExt, StreamExt};
+use json::JsonValue;
 use log::{error, info};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -13,8 +14,14 @@ use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
 
 const JSON_MEETING_UPDATE: &str = "meetingUpdate";
 const JSON_MEETING_STATE: &str = "meetingState";
-const JSON_IS_IN_MEETING: &str = "isInMeeting";
+const JSON_IS_MUTED: &str = "isMuted";
 const JSON_IS_VIDEO_ON: &str = "isVideoOn";
+const JSON_IS_HAND_RAISED: &str = "isHandRaised";
+const JSON_IS_IN_MEETING: &str = "isInMeeting";
+const JSON_IS_RECORDING_ON: &str = "isRecordingOn";
+const JSON_IS_BACKGROUND_BLURRED: &str = "isBackgroundBlurred";
+const JSON_IS_SHARING: &str = "isSharing";
+const JSON_HAS_UNREAD_MESSAGES: &str = "hasUnreadMessages";
 const JSON_TOKEN_REFRESH: &str = "tokenRefresh";
 pub struct TeamsAPI {
     pub teams_states: Arc<TeamsStates>,
@@ -24,8 +31,14 @@ pub struct TeamsAPI {
 impl TeamsAPI {
     pub fn new(conf: &TeamsConfiguration) -> Self {
         let teams_states = Arc::new(TeamsStates {
+            is_muted: AtomicBool::new(false),
             is_video_on: AtomicBool::new(false),
+            is_hand_raised: AtomicBool::new(false),
             is_in_meeting: AtomicBool::new(false),
+            is_recording_on: AtomicBool::new(false),
+            is_background_blurred: AtomicBool::new(false),
+            is_sharing: AtomicBool::new(false),
+            has_unread_messages: AtomicBool::new(false),
         });
 
         let api_token = if !conf.api_token.is_empty() {
@@ -99,6 +112,21 @@ impl TeamsAPI {
     }
 }
 
+async fn update_value(
+    teams_state_value: &AtomicBool,
+    answer: &JsonValue,
+    json_value_name: &str,
+) -> bool {
+    let new_value = answer[JSON_MEETING_UPDATE][JSON_MEETING_STATE][json_value_name]
+        .as_bool()
+        .unwrap_or_else(|| {
+            error!("Unable to locate {} variable in JSON", json_value_name);
+            false
+        });
+
+    teams_state_value.swap(new_value, Ordering::Relaxed) != new_value
+}
+
 async fn parse_data(
     json: &str,
     listener: Arc<Box<dyn Listener>>,
@@ -108,34 +136,28 @@ async fn parse_data(
     let answer = json::parse(&json.to_string()).unwrap_or(json::parse("{}").unwrap());
 
     if answer.has_key(JSON_MEETING_UPDATE) {
-        let new_in_meeting = answer[JSON_MEETING_UPDATE][JSON_MEETING_STATE][JSON_IS_IN_MEETING]
-            .as_bool()
-            .unwrap_or_else(|| {
-                error!("Unable to locate {} variable in JSON", JSON_IS_VIDEO_ON);
-                false
-            });
+        let mut has_changed = update_value(&teams_states.is_muted, &answer, JSON_IS_MUTED).await;
+        has_changed |= update_value(&teams_states.is_video_on, &answer, JSON_IS_VIDEO_ON).await;
+        has_changed |=
+            update_value(&teams_states.is_hand_raised, &answer, JSON_IS_HAND_RAISED).await;
+        has_changed |= update_value(&teams_states.is_in_meeting, &answer, JSON_IS_IN_MEETING).await;
+        has_changed |=
+            update_value(&teams_states.is_recording_on, &answer, JSON_IS_RECORDING_ON).await;
+        has_changed |= update_value(
+            &teams_states.is_background_blurred,
+            &answer,
+            JSON_IS_BACKGROUND_BLURRED,
+        )
+        .await;
+        has_changed |= update_value(&teams_states.is_sharing, &answer, JSON_IS_SHARING).await;
+        has_changed |= update_value(
+            &teams_states.has_unread_messages,
+            &answer,
+            JSON_HAS_UNREAD_MESSAGES,
+        )
+        .await;
 
-        let new_video_on = answer[JSON_MEETING_UPDATE][JSON_MEETING_STATE][JSON_IS_VIDEO_ON]
-            .as_bool()
-            .unwrap_or_else(|| {
-                error!("Unable to locate {} variable in JSON", JSON_IS_VIDEO_ON);
-                false
-            });
-
-        let is_in_meeting_changed = teams_states
-            .is_in_meeting
-            .swap(new_in_meeting, Ordering::Relaxed)
-            != new_in_meeting;
-
-        let is_video_on_changed = teams_states
-            .is_video_on
-            .swap(new_video_on, Ordering::Relaxed)
-            != new_video_on;
-
-        if force_update.swap(false, Ordering::Relaxed)
-            || is_in_meeting_changed
-            || is_video_on_changed
-        {
+        if force_update.swap(false, Ordering::Relaxed) || has_changed {
             listener.notify_changed(&teams_states).await?;
         }
     } else if answer.has_key(JSON_TOKEN_REFRESH) && !answer[JSON_TOKEN_REFRESH].is_empty() {

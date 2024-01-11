@@ -39,12 +39,28 @@ impl MqttApi {
 #[async_trait]
 impl Listener for MqttApi {
     async fn notify_changed(&self, teams_states: &TeamsStates) -> anyhow::Result<()> {
-        let in_meeting = &*bool_to_str(teams_states.is_in_meeting.load(Ordering::Relaxed));
+        let muted = &*bool_to_str(teams_states.is_muted.load(Ordering::Relaxed));
         let video_on = &*bool_to_str(teams_states.is_video_on.load(Ordering::Relaxed));
+        let hand_raised = &*bool_to_str(teams_states.is_hand_raised.load(Ordering::Relaxed));
+        let in_meeting = &*bool_to_str(teams_states.is_in_meeting.load(Ordering::Relaxed));
+        let recording = &*bool_to_str(teams_states.is_recording_on.load(Ordering::Relaxed));
+        let background_blurred =
+            &*bool_to_str(teams_states.is_background_blurred.load(Ordering::Relaxed));
+        let sharing = &*bool_to_str(teams_states.is_sharing.load(Ordering::Relaxed));
+        let unread_messages =
+            &*bool_to_str(teams_states.has_unread_messages.load(Ordering::Relaxed));
+
+        let mqtt_entities = &self.mqtt_configuration.mqtt_entities;
 
         let payload = json!({
-            &self.mqtt_configuration.mqtt_entities.meeting:in_meeting,
-            &self.mqtt_configuration.mqtt_entities.video:video_on,
+            &mqtt_entities.muted:muted,
+            &mqtt_entities.video:video_on,
+            &mqtt_entities.hand_raised:hand_raised,
+            &mqtt_entities.meeting:in_meeting,
+            &mqtt_entities.recording:recording,
+            &mqtt_entities.background_blurred:background_blurred,
+            &mqtt_entities.sharing:sharing,
+            &mqtt_entities.unread_messages:unread_messages,
         });
 
         // todo: log failures
