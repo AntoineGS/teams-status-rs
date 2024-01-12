@@ -27,12 +27,26 @@ pub struct MqttEntities {
 }
 
 pub struct MqttConfiguration {
-    pub url: String,
+    url: String,
     pub port: u16,
     pub topic: String,
     pub username: String,
     pub password: String,
     pub mqtt_entities: MqttEntities,
+}
+
+impl MqttConfiguration {
+    pub fn url(&self) -> &str {
+        &self.url
+    }
+
+    pub fn set_url(&mut self, url: String) {
+        self.url = if url.to_lowercase().starts_with("mqtt://") {
+            url[7..].to_string()
+        } else {
+            url
+        };
+    }
 }
 
 pub fn create_mqtt_configuration() -> MqttConfiguration {

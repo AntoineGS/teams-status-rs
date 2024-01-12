@@ -18,7 +18,7 @@ impl MqttApi {
     pub fn new(mqtt_configuration: MqttConfiguration) -> anyhow::Result<Self> {
         let mut mqtt_options = MqttOptions::new(
             "teams-status",
-            &mqtt_configuration.url,
+            mqtt_configuration.url(),
             mqtt_configuration.port,
         );
 

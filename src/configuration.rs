@@ -102,7 +102,7 @@ fn load_configuration(conf: &mut Configuration) {
                     _ => { /* We just ignore incorrect configs */ }
                 },
                 Some(MQTT) => match k {
-                    MQTT_URL => conf.mqtt.url = v.to_string(),
+                    MQTT_URL => conf.mqtt.set_url(v.to_string()),
                     MQTT_PORT => conf.mqtt.port = v.parse().unwrap_or(MQTT_PORT_DEFAULT),
                     MQTT_TOPIC => conf.mqtt.topic = v.to_string(),
                     MQTT_USERNAME => conf.mqtt.username = v.to_string(),
@@ -188,7 +188,7 @@ fn save_ha_configuration(conf: &Configuration) {
 
     let mqtt = &conf.mqtt;
     ini.with_section(Some(MQTT))
-        .set(MQTT_URL, &mqtt.url)
+        .set(MQTT_URL, mqtt.url())
         .set(MQTT_PORT, &mqtt.port.to_string())
         .set(MQTT_TOPIC, &mqtt.topic)
         .set(MQTT_USERNAME, &mqtt.username)
