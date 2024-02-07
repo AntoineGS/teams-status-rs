@@ -4,3 +4,4 @@ Cargo.lock
 /output.log
 /conf.ini
 release-plz.exe
+/tests
