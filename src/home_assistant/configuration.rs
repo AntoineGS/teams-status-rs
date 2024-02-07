@@ -104,7 +104,6 @@ pub fn create_ha_configuration() -> HaConfiguration {
             },
         },
 
-        // TODO
         has_unread_messages: HaEntity {
             id: "binary_sensor.teams_unread_messages".to_string(),
             friendly_name: "Teams Unread Messages".to_string(),
