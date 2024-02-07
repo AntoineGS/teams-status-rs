@@ -1,4 +1,4 @@
-use crate::teams::states::TeamsStates;
+use crate::teams_ws::states::TeamsStates;
 use async_trait::async_trait;
 
 pub trait StopController {}

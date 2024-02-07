@@ -9,7 +9,7 @@ use crate::mqtt::configuration::{
     MQTT_RECORDING, MQTT_SHARING, MQTT_TOPIC, MQTT_UNREAD_MESSAGES, MQTT_URL, MQTT_USERNAME,
     MQTT_VIDEO,
 };
-use crate::teams::configuration::{
+use crate::teams_ws::configuration::{
     create_teams_configuration, TeamsConfiguration, TEAMS, TEAMS_API_TOKEN, TEAMS_URL,
 };
 use crate::utils::{decrypt_if_needed, encrypt};

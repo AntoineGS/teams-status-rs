@@ -1,7 +1,7 @@
-use crate::teams::configuration::{
+use crate::teams_ws::configuration::{
     change_teams_configuration, TeamsConfiguration, TEAMS, TEAMS_API_TOKEN,
 };
-use crate::teams::states::TeamsStates;
+use crate::teams_ws::states::TeamsStates;
 use crate::traits::Listener;
 use anyhow::Context;
 use futures_util::{future, pin_mut, SinkExt, StreamExt};

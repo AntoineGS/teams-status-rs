@@ -1,5 +1,5 @@
 use crate::mqtt::configuration::MqttConfiguration;
-use crate::teams::states::TeamsStates;
+use crate::teams_ws::states::TeamsStates;
 use crate::traits::Listener;
 use crate::utils::bool_to_str;
 use async_trait::async_trait;

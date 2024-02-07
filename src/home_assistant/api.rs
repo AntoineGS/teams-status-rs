@@ -1,5 +1,5 @@
 use crate::home_assistant::configuration::{HaConfiguration, HaEntity};
-use crate::teams::states::TeamsStates;
+use crate::teams_ws::states::TeamsStates;
 use crate::traits::Listener;
 use crate::utils::bool_to_str;
 use anyhow::anyhow;
