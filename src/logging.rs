@@ -27,4 +27,5 @@ pub fn initialize_logging() {
         .unwrap();
 
     log4rs::init_config(log_config).unwrap();
+    log_panics::init();
 }
