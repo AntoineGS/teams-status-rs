@@ -1,5 +1,18 @@
 # Teams Status - RS
 
+## [0.4.1] - 2024-03-27
+
+### 🐛 Bug Fixes
+- Ensure MQTT is reconnected upon connection failure, fixes #19
+
+### ⚙️ Miscellaneous Tasks
+- Convert from using release-plz to git-cliff as it fits my needs better for this type of application
+- Update dependencies
+
+### Release
+- V0.4.1 with rust v1.77
+
+
 ## [0.4.0] - 2024-03-13
 
 ### 🚀 Features

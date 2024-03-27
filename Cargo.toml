@@ -1,11 +1,11 @@
 [package]
 name = "teams_status"
-version = "0.4.0"
+version = "0.4.1"
 edition = "2021"
 
 [package.metadata.winres]
 ProductName = "Teams Status"
-ProductVersion = "0.4.0"
+ProductVersion = "0.4.1"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
