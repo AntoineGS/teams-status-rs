@@ -76,4 +76,20 @@ impl Listener for MqttApi {
 
         Ok(())
     }
+
+    fn reconnect(&mut self) {
+        let mut mqtt_options = MqttOptions::new(
+            "teams-status",
+            self.mqtt_configuration.url(),
+            self.mqtt_configuration.port,
+        );
+
+        mqtt_options.set_credentials(&self.mqtt_configuration.username, &self.mqtt_configuration.password);
+        mqtt_options.set_keep_alive(Duration::from_secs(5));
+        let (client, mut event_loop) = AsyncClient::new(mqtt_options, 10);
+
+        self.client = client;
+        // mqttc requires this to work
+        task::spawn(async move { while let Ok(_) = event_loop.poll().await {} });
+    }
 }

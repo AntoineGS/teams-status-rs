@@ -7,4 +7,5 @@ pub trait StopController {}
 #[async_trait]
 pub trait Listener {
     async fn notify_changed(&self, teams_states: &TeamsStates) -> anyhow::Result<()>;
+    fn reconnect(&mut self);
 }

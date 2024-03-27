@@ -73,50 +73,54 @@ impl Listener for HaApi {
             &teams_states.is_muted,
             &self.ha_configuration.entities.is_muted,
         )
-        .await?;
+            .await?;
 
         self.update_ha(
             &teams_states.is_video_on,
             &self.ha_configuration.entities.is_video_on,
         )
-        .await?;
+            .await?;
 
         self.update_ha(
             &teams_states.is_hand_raised,
             &self.ha_configuration.entities.is_hand_raised,
         )
-        .await?;
+            .await?;
 
         self.update_ha(
             &teams_states.is_in_meeting,
             &self.ha_configuration.entities.is_in_meeting,
         )
-        .await?;
+            .await?;
 
         self.update_ha(
             &teams_states.is_recording_on,
             &self.ha_configuration.entities.is_recording_on,
         )
-        .await?;
+            .await?;
 
         self.update_ha(
             &teams_states.is_background_blurred,
             &self.ha_configuration.entities.is_background_blurred,
         )
-        .await?;
+            .await?;
 
         self.update_ha(
             &teams_states.is_sharing,
             &self.ha_configuration.entities.is_sharing,
         )
-        .await?;
+            .await?;
 
         self.update_ha(
             &teams_states.has_unread_messages,
             &self.ha_configuration.entities.has_unread_messages,
         )
-        .await?;
+            .await?;
 
         Ok(())
+    }
+
+    fn reconnect(&mut self) {
+        // considered not needed for now, as I believe the API will reconnect upon failure (not tested)
     }
 }

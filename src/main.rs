@@ -1,4 +1,5 @@
 #![windows_subsystem = "windows"]
+
 mod configuration;
 mod home_assistant;
 mod logging;
@@ -10,7 +11,7 @@ mod utils;
 
 use std::process::exit;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::time;
 
 use crate::configuration::get_configuration;
@@ -72,7 +73,7 @@ async fn run_apis(
     };
 
     teams_api
-        .start_listening(Arc::new(listener), is_running.clone(), toggle_mute.clone())
+        .start_listening(Arc::new(Mutex::new(listener)), is_running.clone(), toggle_mute.clone())
         .await?;
 
     Ok(())

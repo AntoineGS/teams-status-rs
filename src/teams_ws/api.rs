@@ -8,8 +8,9 @@ use futures_util::{future, pin_mut, SinkExt, StreamExt};
 use json::JsonValue;
 use log::{error, info};
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 use std::time;
+use std::time::Duration;
 use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
 
 const JSON_MEETING_UPDATE: &str = "meetingUpdate";
@@ -23,6 +24,7 @@ const JSON_IS_BACKGROUND_BLURRED: &str = "isBackgroundBlurred";
 const JSON_IS_SHARING: &str = "isSharing";
 const JSON_HAS_UNREAD_MESSAGES: &str = "hasUnreadMessages";
 const JSON_TOKEN_REFRESH: &str = "tokenRefresh";
+
 pub struct TeamsAPI {
     pub teams_states: Arc<TeamsStates>,
     pub url: String,
@@ -56,7 +58,7 @@ impl TeamsAPI {
 
     pub async fn start_listening(
         &self,
-        listener: Arc<Box<dyn Listener>>,
+        listener: Arc<Mutex<Box<dyn Listener>>>,
         is_running: Arc<AtomicBool>,
         toggle_mute: Arc<AtomicBool>,
     ) -> anyhow::Result<()> {
@@ -72,16 +74,17 @@ impl TeamsAPI {
                     let data = &message.unwrap().into_data();
                     let json = String::from_utf8_lossy(data);
                     info!("{}", json);
-                    let parse_result = parse_data(
+
+                    let parse_result = parse_data_and_notify_listener(
                         &json,
                         listener.clone(),
                         self.teams_states.clone(),
                         force_update.clone(),
                     )
-                    .await;
+                        .await;
 
                     if parse_result.is_err() {
-                        error!("{}", parse_result.unwrap_err())
+                        error!("Unable to parse or notify listener, abandoning: {}", parse_result.unwrap_err());
                     }
                 }
             })
@@ -127,9 +130,9 @@ async fn update_value(
     teams_state_value.swap(new_value, Ordering::Relaxed) != new_value
 }
 
-async fn parse_data(
+async fn parse_data_and_notify_listener(
     json: &str,
-    listener: Arc<Box<dyn Listener>>,
+    listener: Arc<Mutex<Box<dyn Listener>>>,
     teams_states: Arc<TeamsStates>,
     force_update: Arc<AtomicBool>,
 ) -> anyhow::Result<()> {
@@ -148,17 +151,32 @@ async fn parse_data(
             &answer,
             JSON_IS_BACKGROUND_BLURRED,
         )
-        .await;
+            .await;
         has_changed |= update_value(&teams_states.is_sharing, &answer, JSON_IS_SHARING).await;
         has_changed |= update_value(
             &teams_states.has_unread_messages,
             &answer,
             JSON_HAS_UNREAD_MESSAGES,
         )
-        .await;
+            .await;
 
         if force_update.swap(false, Ordering::Relaxed) || has_changed {
-            listener.notify_changed(&teams_states).await?;
+            // Issue!: This will only run once regardless of MAX_RETRIES
+            // for some reason after a reconnect the notify_changed will get a pass no matter what
+            const MAX_RETRIES: i32 = 3;
+            for i in 1..MAX_RETRIES {
+                let result = listener.lock().unwrap().notify_changed(&teams_states).await;
+
+                if result.is_ok() || (i == MAX_RETRIES) {
+                    result?
+                }
+                // we will try to reconnect if the connection failed
+                else if i < MAX_RETRIES {
+                    error!("{}: Reconnecting and retrying...", result.unwrap_err());
+                    tokio::time::sleep(Duration::from_secs(1)).await;
+                    listener.lock().unwrap().reconnect();
+                }
+            }
         }
     } else if answer.has_key(JSON_TOKEN_REFRESH) && !answer[JSON_TOKEN_REFRESH].is_empty() {
         change_teams_configuration(
