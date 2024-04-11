@@ -10,7 +10,8 @@ ProductVersion = "0.4.1"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-home-assistant-rest = "0.2.0"
+# temporary until the following crate is updated with the new fixes
+home-assistant-rest = { path = "./../home-assistant-rest" }
 actix-rt = "2.9.0"
 log = "0.4.21"
 chrono = "0.4.37"
