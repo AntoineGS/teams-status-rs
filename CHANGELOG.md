@@ -14,7 +14,6 @@
 
 ### ⚙️ Miscellaneous Tasks
 - Add WIP Teams log parsing as it was discovered switching back to 'Available' is not being logged, rendering this whole mod useless until it is. Not compiled in project.
-- Add WIP Teams log parsing as it was discovered switching back to 'Available' is not being logged, rendering this whole mod useless until it is. Not compiled in project.
 - Remove unoptimized build settings
 - Update deps
 - Add logging
@@ -33,7 +32,6 @@
 ## [0.4.0] - 2024-03-13
 
 ### 🚀 Features
-- (mqtt) Allow use of 'mqtt://' prefix in URL, which will be removed and saved back to conf.ini
 - (mqtt) Allow use of 'mqtt://' prefix in URL, which will be removed and saved back to conf.ini
 - Log panics to facilitate locating run-time errors
 
@@ -60,7 +58,6 @@
 
 ### 🚀 Features
 - Addition of new entities (all that are in the Teams API) for both HA and MQTT
-- Addition of new entities (all that are in the Teams API) for both HA and MQTT
 
 ### 🚜 Refactor
 - Fix warning
@@ -73,7 +70,6 @@
 ## [0.2.3] - 2024-01-09
 
 ### 🚀 Features
-- Retain mqtt messages
 - Retain mqtt messages
 - Retain mqtt messages
 
