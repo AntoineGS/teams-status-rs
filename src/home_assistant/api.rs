@@ -6,7 +6,7 @@ use anyhow::anyhow;
 use async_trait::async_trait;
 use home_assistant_rest::post::StateParams;
 use home_assistant_rest::Client;
-use log::error;
+use log::{error, info};
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 
@@ -49,11 +49,14 @@ impl HaApi {
 
         attributes.insert("icon".to_string(), icon.to_string());
 
+        let state_str = bool_to_str(state_bool);
         let params = StateParams {
             entity_id: ha_entity.id.to_string(),
-            state: bool_to_str(state_bool),
+            state: state_str.clone(),
             attributes,
         };
+
+        info!("Updating HA entity ({}) to '{}'", &ha_entity.id, &state_str);
 
         let post_states_res = self.client.post_states(params).await;
 
@@ -70,8 +73,8 @@ impl Listener for HaApi {
     async fn notify_changed(&self, teams_states: &TeamsStates) -> anyhow::Result<()> {
         // Reflection would be nice here... Tried with bevy_reflect but ran into an issue with AtomicBool
         self.update_ha(
-            &teams_states.is_muted,
-            &self.ha_configuration.entities.is_muted,
+            &teams_states.is_in_meeting,
+            &self.ha_configuration.entities.is_in_meeting,
         )
             .await?;
 
@@ -80,16 +83,16 @@ impl Listener for HaApi {
             &self.ha_configuration.entities.is_video_on,
         )
             .await?;
-
+        
         self.update_ha(
-            &teams_states.is_hand_raised,
-            &self.ha_configuration.entities.is_hand_raised,
+            &teams_states.is_muted,
+            &self.ha_configuration.entities.is_muted,
         )
             .await?;
 
         self.update_ha(
-            &teams_states.is_in_meeting,
-            &self.ha_configuration.entities.is_in_meeting,
+            &teams_states.is_hand_raised,
+            &self.ha_configuration.entities.is_hand_raised,
         )
             .await?;
 
