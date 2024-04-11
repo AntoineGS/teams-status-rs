@@ -168,7 +168,8 @@ async fn parse_data_and_notify_listener(
                 let result = listener.lock().unwrap().notify_changed(&teams_states).await;
 
                 if result.is_ok() || (i == MAX_RETRIES) {
-                    result?
+                    result?;
+                    break;
                 }
                 // we will try to reconnect if the connection failed
                 else if i < MAX_RETRIES {
