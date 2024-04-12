@@ -9,24 +9,31 @@ use home_assistant_rest::Client;
 use log::{error, info};
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
+use futures_util::future::try_join_all;
 
 pub struct HaApi {
-    client: Client,
     ha_configuration: HaConfiguration,
 }
 
 impl HaApi {
     pub fn new(ha_configuration: HaConfiguration) -> anyhow::Result<Self> {
-        let client = Client::new(&*ha_configuration.url, &*ha_configuration.long_live_token)?;
         Ok(Self {
-            client,
             ha_configuration,
         })
     }
 
-    /* friendly_name is needed as API calls wipe the configured name */
-    async fn update_ha(&self, state: &AtomicBool, ha_entity: &HaEntity) -> anyhow::Result<()> {
-        let api_status = self.client.get_api_status().await.unwrap();
+    // friendly_name is needed as API calls wipe the configured name
+    async fn update_ha(&self, state: &AtomicBool, prev_state: &AtomicBool, ha_entity: &HaEntity, force_update: bool) -> anyhow::Result<()> {
+        let state_bool = state.load(Ordering::Relaxed);
+        let prev_state_bool = prev_state.load(Ordering::Relaxed);
+
+        // we exit early if nothing has changed, and we are not forcing an update
+        if state_bool == prev_state_bool && !force_update {
+            return Ok(());
+        }
+
+        let client = Client::new(&*self.ha_configuration.url, &*self.ha_configuration.long_live_token)?;
+        let api_status = client.get_api_status().await.unwrap();
 
         if api_status.message != "API running." {
             error!("Home Assistant API cannot be reached");
@@ -38,8 +45,6 @@ impl HaApi {
             "friendly_name".to_string(),
             ha_entity.friendly_name.to_string(),
         );
-
-        let state_bool = state.load(Ordering::Relaxed);
 
         let icon = if state_bool {
             &ha_entity.icons.on
@@ -58,11 +63,13 @@ impl HaApi {
 
         info!("Updating HA entity ({}) to '{}'", &ha_entity.id, &state_str);
 
-        let post_states_res = self.client.post_states(params).await;
+        let post_states_res = client.post_states(params).await;
 
         if post_states_res.is_err() {
             error!("{}", post_states_res.unwrap_err());
         };
+
+        prev_state.store(state_bool, Ordering::Relaxed);
 
         Ok(())
     }
@@ -70,55 +77,67 @@ impl HaApi {
 
 #[async_trait]
 impl Listener for HaApi {
-    async fn notify_changed(&self, teams_states: &TeamsStates) -> anyhow::Result<()> {
+    async fn notify_changed(&self, teams_states: &TeamsStates, force_update: bool) -> anyhow::Result<()> {
         // Reflection would be nice here... Tried with bevy_reflect but ran into an issue with AtomicBool
-        self.update_ha(
+        let mut futures = Vec::new();
+
+        futures.push(self.update_ha(
             &teams_states.is_in_meeting,
+            &teams_states.prev_is_in_meeting,
             &self.ha_configuration.entities.is_in_meeting,
-        )
-            .await?;
+            force_update,
+        ));
 
-        self.update_ha(
+        futures.push(self.update_ha(
             &teams_states.is_video_on,
+            &teams_states.prev_is_video_on,
             &self.ha_configuration.entities.is_video_on,
-        )
-            .await?;
-        
-        self.update_ha(
+            force_update,
+        ));
+
+        futures.push(self.update_ha(
             &teams_states.is_muted,
+            &teams_states.prev_is_muted,
             &self.ha_configuration.entities.is_muted,
-        )
-            .await?;
+            force_update,
+        ));
 
-        self.update_ha(
+        futures.push(self.update_ha(
             &teams_states.is_hand_raised,
+            &teams_states.prev_is_hand_raised,
             &self.ha_configuration.entities.is_hand_raised,
-        )
-            .await?;
+            force_update,
+        ));
 
-        self.update_ha(
+        futures.push(self.update_ha(
             &teams_states.is_recording_on,
+            &teams_states.prev_is_recording_on,
             &self.ha_configuration.entities.is_recording_on,
-        )
-            .await?;
+            force_update,
+        ));
 
-        self.update_ha(
+        futures.push(self.update_ha(
             &teams_states.is_background_blurred,
+            &teams_states.prev_is_background_blurred,
             &self.ha_configuration.entities.is_background_blurred,
-        )
-            .await?;
+            force_update,
+        ));
 
-        self.update_ha(
+        futures.push(self.update_ha(
             &teams_states.is_sharing,
+            &teams_states.prev_is_sharing,
             &self.ha_configuration.entities.is_sharing,
-        )
-            .await?;
+            force_update,
+        ));
 
-        self.update_ha(
+        futures.push(self.update_ha(
             &teams_states.has_unread_messages,
+            &teams_states.prev_has_unread_messages,
             &self.ha_configuration.entities.has_unread_messages,
-        )
-            .await?;
+            force_update,
+        ));
+
+        try_join_all(futures).await?;
 
         Ok(())
     }

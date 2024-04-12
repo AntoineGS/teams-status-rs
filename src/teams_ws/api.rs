@@ -34,13 +34,21 @@ impl TeamsAPI {
     pub fn new(conf: &TeamsConfiguration) -> Self {
         let teams_states = Arc::new(TeamsStates {
             is_muted: AtomicBool::new(false),
+            prev_is_muted: AtomicBool::new(false),
             is_video_on: AtomicBool::new(false),
+            prev_is_video_on: AtomicBool::new(false),
             is_hand_raised: AtomicBool::new(false),
+            prev_is_hand_raised: AtomicBool::new(false),
             is_in_meeting: AtomicBool::new(false),
+            prev_is_in_meeting: AtomicBool::new(false),
             is_recording_on: AtomicBool::new(false),
+            prev_is_recording_on: AtomicBool::new(false),
             is_background_blurred: AtomicBool::new(false),
+            prev_is_background_blurred: AtomicBool::new(false),
             is_sharing: AtomicBool::new(false),
+            prev_is_sharing: AtomicBool::new(false),
             has_unread_messages: AtomicBool::new(false),
+            prev_has_unread_messages: AtomicBool::new(false),
         });
 
         let api_token = if !conf.api_token.is_empty() {
@@ -160,12 +168,14 @@ async fn parse_data_and_notify_listener(
         )
             .await;
 
-        if force_update.swap(false, Ordering::Relaxed) || has_changed {
+        let force_update = force_update.swap(false, Ordering::Relaxed);
+
+        if force_update || has_changed {
             // Issue!: This will only run once regardless of MAX_RETRIES
             // for some reason after a reconnect the notify_changed will get a pass no matter what
             const MAX_RETRIES: i32 = 3;
             for i in 1..MAX_RETRIES {
-                let result = listener.lock().unwrap().notify_changed(&teams_states).await;
+                let result = listener.lock().unwrap().notify_changed(&teams_states, force_update).await;
 
                 if result.is_ok() || (i == MAX_RETRIES) {
                     result?;
