@@ -1,5 +1,15 @@
 # Teams Status - RS
 
+## [1.0.0] - 2024-04-12
+
+### ⚡ Performance
+- Concurrent HA API calls
+- Only update HA API for states that have changed
+
+### ⚙️ Miscellaneous Tasks
+- Remove duplicates from CHANGELOG.md
+
+
 ## [0.5.0] - 2024-04-11
 
 ### 🐛 Bug Fixes
