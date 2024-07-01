@@ -26,9 +26,10 @@ impl Watcher {
         // todo: call API here
         fs::write(r"C:\Users\antoi\Documents\teams_log.txt", last_state.unwrap_or("None".to_string())).unwrap();
 
-        self.file_notifier.watch(latest_log_file.as_ref())?;
+        // self.file_notifier.watch(latest_log_file.as_ref())?;
         self.file_notifier.watch(Some(&self.teams_base_path))?;
 
+        // todo: this only gets triggered when refreshing the file in Notepad++
         while let Some(res) = self.file_notifier.rx.recv().await {
             match res {
                 Ok(res) => {
@@ -60,9 +61,9 @@ impl Watcher {
                         last_state = new_last_state;
                         file_position = mew_file_position;
 
-                        // todo: we will be calling API here
-                        fs::write(r"C:\Users\antoi\Documents\teams_log.txt", last_state.clone().unwrap_or("None".to_string())).unwrap();
                         if last_state.is_some() {
+                            // todo: we will be calling API here
+                            fs::write(r"C:\Users\antoi\Documents\teams_log.txt", last_state.clone().unwrap_or("None".to_string())).unwrap();
                             println!("{}", last_state.clone().unwrap());
                         }
                     }
