@@ -33,9 +33,9 @@ impl HaApi {
         }
 
         let client = Client::new(&*self.ha_configuration.url, &*self.ha_configuration.long_live_token)?;
-        let api_status = client.get_api_status().await.unwrap();
+        let api_status = client.get_api_status().await;
 
-        if api_status.message != "API running." {
+        if api_status.is_err() || api_status.unwrap().message != "API running." {
             error!("Home Assistant API cannot be reached");
             return Err(anyhow!("Home Assistant API cannot be reached"));
         }
