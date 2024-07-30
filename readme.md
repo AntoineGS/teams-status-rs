@@ -1,6 +1,9 @@
 # Setup
 
+- Download teams_status.exe from https://github.com/AntoineGS/teams-status-rs/releases to your Windows computer that runs the Teams client
+    - Note: This application works with the "new" Teams 2.0 client for Windows
 - Launch the application, it will generate the ini file (conf.ini) in the same folder as the .exe
+- Use Windows Task Manager (Details tab) to end the 'teams_status.exe' process
 - In Microsoft Teams, enable the Third-Party
   API ([see Microsoft documentation](https://support.microsoft.com/en-us/office/connect-to-third-party-devices-in-microsoft-teams-aabca9f2-47bb-407f-9f9b-81a104a883d6?storagetype=live))
     - The API Token will be generated automatically by the integration, so leave it blank in the configuration file
@@ -18,11 +21,10 @@
         - Double-check the other configurations, they have default values, but you may want/need to change them
         - (optional) Set the entities as persistent in HA, otherwise they will show up as missing if the application
           has been turned off for some time, see [here](#ha-persistent-entities).
-- Run the application again if it has closed due to missing configuration, otherwise it might just pick up the
-  configuration and start working once the ini file is fully configured
+- Run the application again
     - It will create the entities in HA automatically when it connects
     - Start a meeting in Teams (you can be the only person in it)
-    - From the tray icon, right-click, and click on `Toggle Mute`
+    - From the 'Teams Status' tray icon, right-click, and click on `Toggle Mute`
     - You will get a prompt in Teams to allow the application to use the API
         - If you do not click on time Teams will close the prompt. Simply click on Toggle Mute again.
 
