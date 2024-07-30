@@ -1,7 +1,6 @@
 # Setup
 
-- Download teams_status.exe from https://github.com/AntoineGS/teams-status-rs/releases to your Windows computer that runs the Teams client
-    - Note: This application works with the "new" Teams 2.0 client for Windows
+- Download teams_status.exe from https://github.com/AntoineGS/teams-status-rs/releases to your Windows computer that runs the New Teams client
 - Launch the application, it will generate the ini file (conf.ini) in the same folder as the .exe
 - Use Windows Task Manager (Details tab) to end the 'teams_status.exe' process
 - In Microsoft Teams, enable the Third-Party
@@ -27,6 +26,10 @@
     - From the 'Teams Status' tray icon, right-click, and click on `Toggle Mute`
     - You will get a prompt in Teams to allow the application to use the API
         - If you do not click on time Teams will close the prompt. Simply click on Toggle Mute again.
+- Optional: Configure to run automatically after Windows logon
+    - Browse to 'teams_status.exe' using File Explorer, right click and choose Copy
+    - Browse to "%AppData%\Microsoft\Windows\Start Menu\Programs\Startup"
+    - Right-click in a blank area of the File Explorer window and choose Paste Shortcut
 
 # HA Persistent Entities
 
@@ -82,9 +85,16 @@ template:
 # Notices
 
 - Pull Requests, Issues, Feature Requests are all welcomed
-- This integration only supports the New Teams
+- This integration only supports the New Teams (2.0 client)
 - Logging is done in output.log, and rolls over at 10mb, keeping a maximum of two files
 - Passwords and keys are encrypted
+- This project utilizes the local Teams Client API (instead of Azure / M365)
+    - Advantages
+        - No permissions or App Registrations required in Azure, unlike several others that may require organizations to approve an exception depending on current security settings.
+    - Disadvantages
+        - If you join meetings from another client (mobile, web, etc), this project will not see those status updates.
+        - This project does not provide a general "Presence" color sensor
+
 
 # Example Data
 
