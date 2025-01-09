@@ -4,12 +4,12 @@ use crate::traits::Listener;
 use crate::utils::bool_to_str;
 use anyhow::anyhow;
 use async_trait::async_trait;
+use futures_util::future::try_join_all;
 use home_assistant_rest::post::StateParams;
 use home_assistant_rest::Client;
 use log::{error, info};
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
-use futures_util::future::try_join_all;
 
 pub struct HaApi {
     ha_configuration: HaConfiguration,
@@ -17,13 +17,17 @@ pub struct HaApi {
 
 impl HaApi {
     pub fn new(ha_configuration: HaConfiguration) -> anyhow::Result<Self> {
-        Ok(Self {
-            ha_configuration,
-        })
+        Ok(Self { ha_configuration })
     }
 
     // friendly_name is needed as API calls wipe the configured name
-    async fn update_ha(&self, state: &AtomicBool, prev_state: &AtomicBool, ha_entity: &HaEntity, force_update: bool) -> anyhow::Result<()> {
+    async fn update_ha(
+        &self,
+        state: &AtomicBool,
+        prev_state: &AtomicBool,
+        ha_entity: &HaEntity,
+        force_update: bool,
+    ) -> anyhow::Result<()> {
         let state_bool = state.load(Ordering::Relaxed);
         let prev_state_bool = prev_state.load(Ordering::Relaxed);
 
@@ -32,10 +36,13 @@ impl HaApi {
             return Ok(());
         }
 
-        let client = Client::new(&*self.ha_configuration.url, &*self.ha_configuration.long_live_token)?;
+        let client = Client::new(
+            &*self.ha_configuration.url,
+            &*self.ha_configuration.long_live_token,
+        )?;
         let api_status = client.get_api_status().await;
 
-        if api_status.is_err() || api_status.unwrap().message != "API running." {
+        if api_status.is_err() || api_status?.message != "API running." {
             error!("Home Assistant API cannot be reached");
             return Err(anyhow!("Home Assistant API cannot be reached"));
         }
@@ -77,7 +84,11 @@ impl HaApi {
 
 #[async_trait]
 impl Listener for HaApi {
-    async fn notify_changed(&self, teams_states: &TeamsStates, force_update: bool) -> anyhow::Result<()> {
+    async fn notify_changed(
+        &self,
+        teams_states: &TeamsStates,
+        force_update: bool,
+    ) -> anyhow::Result<()> {
         // Reflection would be nice here... Tried with bevy_reflect but ran into an issue with AtomicBool
         let mut futures = Vec::new();
 

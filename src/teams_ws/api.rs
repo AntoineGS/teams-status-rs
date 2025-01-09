@@ -89,17 +89,20 @@ impl TeamsAPI {
                         self.teams_states.clone(),
                         force_update.clone(),
                     )
-                        .await;
+                    .await;
 
                     if parse_result.is_err() {
-                        error!("Unable to parse or notify listener, abandoning: {}", parse_result.unwrap_err());
+                        error!(
+                            "Unable to parse or notify listener, abandoning: {}",
+                            parse_result.unwrap_err()
+                        );
                     }
                 }
             })
         };
 
         let running_future = async {
-            let one_second = time::Duration::from_secs(1);
+            let one_second = Duration::from_secs(1);
 
             while is_running.load(Ordering::Relaxed) {
                 tokio::time::sleep(one_second).await;
@@ -144,7 +147,7 @@ async fn parse_data_and_notify_listener(
     teams_states: Arc<TeamsStates>,
     force_update: Arc<AtomicBool>,
 ) -> anyhow::Result<()> {
-    let answer = json::parse(&json.to_string()).unwrap_or(json::parse("{}").unwrap());
+    let answer = json::parse(&json.to_string()).unwrap_or(json::parse("{}")?);
 
     if answer.has_key(JSON_MEETING_UPDATE) {
         let mut has_changed = update_value(&teams_states.is_muted, &answer, JSON_IS_MUTED).await;
@@ -159,14 +162,14 @@ async fn parse_data_and_notify_listener(
             &answer,
             JSON_IS_BACKGROUND_BLURRED,
         )
-            .await;
+        .await;
         has_changed |= update_value(&teams_states.is_sharing, &answer, JSON_IS_SHARING).await;
         has_changed |= update_value(
             &teams_states.has_unread_messages,
             &answer,
             JSON_HAS_UNREAD_MESSAGES,
         )
-            .await;
+        .await;
 
         let force_update = force_update.swap(false, Ordering::Relaxed);
 
@@ -175,7 +178,10 @@ async fn parse_data_and_notify_listener(
             // for some reason after a reconnect the notify_changed will get a pass no matter what
             const MAX_RETRIES: i32 = 3;
             for i in 1..MAX_RETRIES {
-                let result = listener.lock().unwrap().notify_changed(&teams_states, force_update).await;
+                let result = listener
+                    .lock()?
+                    .notify_changed(&teams_states, force_update)
+                    .await;
 
                 if result.is_ok() || (i == MAX_RETRIES) {
                     result?;
@@ -185,7 +191,7 @@ async fn parse_data_and_notify_listener(
                 else if i < MAX_RETRIES {
                     error!("{}: Reconnecting and retrying...", result.unwrap_err());
                     tokio::time::sleep(Duration::from_secs(1)).await;
-                    listener.lock().unwrap().reconnect();
+                    listener.lock()?.reconnect();
                 }
             }
         }
