@@ -11,8 +11,9 @@ mod utils;
 
 use std::process::exit;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use std::time;
+use tokio::sync::Mutex;
 
 use crate::configuration::get_configuration;
 use crate::logging::initialize_logging;
@@ -73,7 +74,11 @@ async fn run_apis(
     };
 
     teams_api
-        .start_listening(Arc::new(Mutex::new(listener)), is_running.clone(), toggle_mute.clone())
+        .start_listening(
+            Arc::new(Mutex::new(listener)),
+            is_running.clone(),
+            toggle_mute.clone(),
+        )
         .await?;
 
     Ok(())

@@ -26,6 +26,7 @@ serde_json = "1.0.135"
 async-trait = "0.1.85"
 anyhow = "1.0.95"
 log-panics = { version = "2.1.0", features = ["with-backtrace"] }
+url = "2.5.4"
 # regex = "1.10.3" # for teams_log
 # notify = { version = "6.1.1" } # for teams_log
 

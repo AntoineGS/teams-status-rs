@@ -13,11 +13,59 @@ use std::sync::atomic::{AtomicBool, Ordering};
 
 pub struct HaApi {
     ha_configuration: HaConfiguration,
+    queried_attributes: bool,
 }
 
 impl HaApi {
     pub fn new(ha_configuration: HaConfiguration) -> anyhow::Result<Self> {
-        Ok(Self { ha_configuration })
+        Ok(Self {
+            ha_configuration,
+            queried_attributes: false,
+        })
+    }
+
+    // fetch state of all entities used in the application, remove attributes that we are handling here, and save the rest to the entity struct
+    async fn update_ha_entities_with_attributes(&mut self) -> anyhow::Result<()> {
+        if self.queried_attributes {
+            return Ok(());
+        }
+
+        let client = Client::new(
+            &self.ha_configuration.url,
+            &self.ha_configuration.long_live_token,
+        )?;
+        let api_status = client.get_api_status().await;
+
+        if api_status.is_err() || api_status?.message != "API running." {
+            error!("Home Assistant API cannot be reached");
+            return Err(anyhow!("Home Assistant API cannot be reached"));
+        }
+
+        for (entity_id, entity) in self.ha_configuration.entities.iter_mut() {
+            let state = client.get_states_of_entity(&entity_id).await;
+
+            if state.is_err() {
+                error!("Error fetching entity state: {}", state.unwrap_err());
+                continue;
+            }
+
+            for (key, value) in state?.attributes {
+                if key != "friendly_name" && key != "icon" {
+                    info!(
+                        "Adding attribute '{}' of value '{}' to entity '{}'",
+                        &key, &value, entity_id
+                    );
+                    // the following will convert non-string values to string unfortunately
+                    entity.additional_attributes.insert(
+                        key,
+                        value.as_str().unwrap_or(&*value.to_string()).to_string(),
+                    );
+                }
+            }
+        }
+
+        self.queried_attributes = true;
+        Ok(())
     }
 
     // friendly_name is needed as API calls wipe the configured name
@@ -37,9 +85,10 @@ impl HaApi {
         }
 
         let client = Client::new(
-            &*self.ha_configuration.url,
-            &*self.ha_configuration.long_live_token,
+            &self.ha_configuration.url,
+            &self.ha_configuration.long_live_token,
         )?;
+        // use this code to connect and get attributes upon starting the application
         let api_status = client.get_api_status().await;
 
         if api_status.is_err() || api_status?.message != "API running." {
@@ -60,6 +109,10 @@ impl HaApi {
         };
 
         attributes.insert("icon".to_string(), icon.to_string());
+
+        for (key, value) in &ha_entity.additional_attributes {
+            attributes.insert(key.to_string(), value.to_string());
+        }
 
         let state_str = bool_to_str(state_bool);
         let params = StateParams {
@@ -85,12 +138,15 @@ impl HaApi {
 #[async_trait]
 impl Listener for HaApi {
     async fn notify_changed(
-        &self,
+        &mut self,
         teams_states: &TeamsStates,
         force_update: bool,
     ) -> anyhow::Result<()> {
+        self.update_ha_entities_with_attributes().await?;
+
         // Reflection would be nice here... Tried with bevy_reflect but ran into an issue with AtomicBool
         let mut futures = Vec::new();
+        // let is_in_meeting = self.ha_configuration.entities.is_in_meeting.clone();
 
         futures.push(self.update_ha(
             &teams_states.is_in_meeting,

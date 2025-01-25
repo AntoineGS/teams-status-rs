@@ -38,7 +38,7 @@ impl MqttApi {
 
 #[async_trait]
 impl Listener for MqttApi {
-    async fn notify_changed(&self, teams_states: &TeamsStates, _: bool) -> anyhow::Result<()> {
+    async fn notify_changed(&mut self, teams_states: &TeamsStates, _: bool) -> anyhow::Result<()> {
         let muted = &*bool_to_str(teams_states.is_muted.load(Ordering::Relaxed));
         let video_on = &*bool_to_str(teams_states.is_video_on.load(Ordering::Relaxed));
         let hand_raised = &*bool_to_str(teams_states.is_hand_raised.load(Ordering::Relaxed));
@@ -84,7 +84,10 @@ impl Listener for MqttApi {
             self.mqtt_configuration.port,
         );
 
-        mqtt_options.set_credentials(&self.mqtt_configuration.username, &self.mqtt_configuration.password);
+        mqtt_options.set_credentials(
+            &self.mqtt_configuration.username,
+            &self.mqtt_configuration.password,
+        );
         mqtt_options.set_keep_alive(Duration::from_secs(5));
         let (client, mut event_loop) = AsyncClient::new(mqtt_options, 10);
 

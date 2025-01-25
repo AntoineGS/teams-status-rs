@@ -8,9 +8,9 @@ use futures_util::{future, pin_mut, SinkExt, StreamExt};
 use json::JsonValue;
 use log::{error, info};
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::{Arc, Mutex};
-use std::time;
+use std::sync::Arc;
 use std::time::Duration;
+use tokio::sync::Mutex;
 use tokio_tungstenite::{connect_async, tungstenite::protocol::Message};
 
 const JSON_MEETING_UPDATE: &str = "meetingUpdate";
@@ -179,7 +179,8 @@ async fn parse_data_and_notify_listener(
             const MAX_RETRIES: i32 = 3;
             for i in 1..MAX_RETRIES {
                 let result = listener
-                    .lock()?
+                    .lock()
+                    .await
                     .notify_changed(&teams_states, force_update)
                     .await;
 
@@ -191,7 +192,7 @@ async fn parse_data_and_notify_listener(
                 else if i < MAX_RETRIES {
                     error!("{}: Reconnecting and retrying...", result.unwrap_err());
                     tokio::time::sleep(Duration::from_secs(1)).await;
-                    listener.lock()?.reconnect();
+                    listener.lock().await.reconnect();
                 }
             }
         }
