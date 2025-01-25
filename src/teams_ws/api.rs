@@ -71,7 +71,7 @@ impl TeamsAPI {
         toggle_mute: Arc<AtomicBool>,
     ) -> anyhow::Result<()> {
         let url_local = url::Url::parse(&self.url)?;
-        let (ws_stream, _) = connect_async(url_local)
+        let (ws_stream, _) = connect_async(url_local.as_str())
             .await
             .with_context(|| "Failed to connect")?;
         let (mut write, read) = ws_stream.split();
