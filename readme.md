@@ -1,6 +1,7 @@
 # Setup
 
-- Download teams_status.exe from https://github.com/AntoineGS/teams-status-rs/releases to your Windows computer that runs the New Teams client
+- Download teams_status.exe from https://github.com/AntoineGS/teams-status-rs/releases to your Windows computer that
+  runs the New Teams client
 - Launch the application, it will generate the ini file (conf.ini) in the same folder as the .exe
 - Use Windows Task Manager (Details tab) to end the 'teams_status.exe' process
 - In Microsoft Teams, enable the Third-Party
@@ -90,11 +91,11 @@ template:
 - Passwords and keys are encrypted
 - This project utilizes the local Teams Client API (instead of Azure / M365)
     - Advantages
-        - No permissions or App Registrations required in Azure, unlike several others that may require organizations to approve an exception depending on current security settings.
+        - No permissions or App Registrations required in Azure, unlike several others that may require organizations to
+          approve an exception depending on current security settings.
     - Disadvantages
-        - If you join meetings from another client (mobile, web, etc), this project will not see those status updates.
+        - If you join meetings from another client (mobile, web, etc.), this project will not see those status updates.
         - This project does not provide a general "Presence" color sensor
-
 
 # Example Data
 
