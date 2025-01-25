@@ -1,0 +1,28 @@
+meta {
+  name: post api state
+  type: http
+  seq: 2
+}
+
+post {
+  url: https:/ha.antoinegs.stream/api/states/binary_sensor.teams_muted
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{TOKEN}}
+}
+
+body:json {
+  {
+    "state": "on",
+    "attributes": {
+      "icon_color": "{% if is_state('binary_sensor.your_sensor', 'on') %} green {% else %} red {% endif %}"
+    }
+  }
+}

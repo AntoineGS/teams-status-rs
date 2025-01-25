@@ -1,0 +1,25 @@
+meta {
+  name: get api state
+  type: http
+  seq: 3
+}
+
+get {
+  url: https:/ha.antoinegs.stream/api/states/binary_sensor.teams_muted
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{TOKEN}}
+}
+
+body:json {
+  {
+  
+  }
+}
