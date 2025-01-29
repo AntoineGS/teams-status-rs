@@ -20,9 +20,27 @@ auth:bearer {
 
 body:json {
   {
-    "state": "on",
+    "entity_id": "binary_sensor.teams_muted",
+    "state": "off",
     "attributes": {
-      "icon_color": "{% if is_state('binary_sensor.your_sensor', 'on') %} green {% else %} red {% endif %}"
+      "icon": "mdi:microphone-off",
+      "friendly_name": "Teams Muted",
+      "templates": {
+        "icon_color": "if (state === 'on') return 'rgb(255, 0, 0)';"
+      },
+      "random_attr": {
+        "more_hierarchy": {
+          "something": "value"
+        }
+      }
+    },
+    "last_changed": "2025-01-28T18:25:04.248424+00:00",
+    "last_reported": "2025-01-29T01:09:56.878845+00:00",
+    "last_updated": "2025-01-29T01:09:56.878845+00:00",
+    "context": {
+      "id": "01JJQSQ5GE5M05C1PTKADZ7R3S",
+      "parent_id": null,
+      "user_id": "788487fb3ceb44aeb49182e8359deef1"
     }
   }
 }
