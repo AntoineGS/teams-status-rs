@@ -27,7 +27,7 @@ pub struct HaEntity {
     pub id: String,
     pub friendly_name: String,
     pub icons: HaIcons,
-    pub additional_attributes: HashMap<String, String>,
+    pub additional_attributes: HashMap<String, serde_json::Value>,
 }
 
 #[derive(Clone)]

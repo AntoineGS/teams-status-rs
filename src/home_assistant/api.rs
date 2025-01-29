@@ -8,6 +8,7 @@ use futures_util::future::try_join_all;
 use home_assistant_rest::post::StateParams;
 use home_assistant_rest::Client;
 use log::{error, info};
+use serde_json::json;
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 
@@ -56,10 +57,7 @@ impl HaApi {
                         &key, &value, entity_id
                     );
                     // the following will convert non-string values to string unfortunately
-                    entity.additional_attributes.insert(
-                        key,
-                        value.as_str().unwrap_or(&*value.to_string()).to_string(),
-                    );
+                    entity.additional_attributes.insert(key, value.clone());
                 }
             }
         }
@@ -96,10 +94,10 @@ impl HaApi {
             return Err(anyhow!("Home Assistant API cannot be reached"));
         }
 
-        let mut attributes: HashMap<String, String> = HashMap::new();
+        let mut attributes: HashMap<String, serde_json::Value> = HashMap::new();
         attributes.insert(
             "friendly_name".to_string(),
-            ha_entity.friendly_name.to_string(),
+            json!(ha_entity.friendly_name.to_string()),
         );
 
         let icon = if state_bool {
@@ -108,10 +106,10 @@ impl HaApi {
             &ha_entity.icons.off
         };
 
-        attributes.insert("icon".to_string(), icon.to_string());
+        attributes.insert("icon".to_string(), json!(icon.to_string()));
 
         for (key, value) in &ha_entity.additional_attributes {
-            attributes.insert(key.to_string(), value.to_string());
+            attributes.insert(key.to_string(), value.clone());
         }
 
         let state_str = bool_to_str(state_bool);
