@@ -1,5 +1,15 @@
 # Teams Status - RS
 
+## [1.1.0] - 2025-01-29
+
+### 🐛 Bug Fixes
+- Ensure attributes are not converted to JSON when written
+- Fixed #30
+
+### 🧪 Testing
+- Improve Bruno post call
+
+
 ## [1.0.2] - 2025-01-25
 
 ### 🚀 Features
