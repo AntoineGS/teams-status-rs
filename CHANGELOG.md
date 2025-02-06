@@ -1,5 +1,14 @@
 # Teams Status - RS
 
+## [1.2.0] - 2025-02-06
+
+### 🚀 Features
+- Prevent opening of the same exe multiple times
+
+### ⚙️ Miscellaneous Tasks
+- Update deps
+
+
 ## [1.1.0] - 2025-01-29
 
 ### 🐛 Bug Fixes
