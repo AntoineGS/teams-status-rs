@@ -4,11 +4,13 @@ mod configuration;
 mod home_assistant;
 mod logging;
 mod mqtt;
+mod mutex;
 mod teams_ws;
 mod traits;
 mod tray;
 mod utils;
 
+use mutex::{create_mutex, release_mutex};
 use std::process::exit;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -31,6 +33,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     info!("--------------------");
     info!("Application starting");
 
+    let mutex = create_mutex();
+
+    if mutex.is_none() {
+        exit(1)
+    }
+
     // to toggle mute from the tray icon, and let Teams allow the application to listen to its websocket
     let toggle_mute = Arc::new(AtomicBool::new(false));
     // used by tray icon to allow exiting the application
@@ -41,7 +49,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Aggressive to re-create the connections, but it will handle all APIs, ideal way would
     // be to structure to app so that each API has its own loop and message queue, so when it
-    // comes back online it would pickup the items from the queue and process them.
+    // comes back online it would pick up the items from the queue and process them.
     while is_running.load(Ordering::Relaxed) {
         let result = run_apis(is_running.clone(), toggle_mute.clone(), save_configuration).await;
         save_configuration = false;
@@ -57,6 +65,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     info!("Application closing");
+
+    release_mutex(mutex);
     exit(0);
 }
 
@@ -83,9 +93,3 @@ async fn run_apis(
 
     Ok(())
 }
-
-// todo: translations & language config?
-// todo: get a better icon
-// todo: auto create versions and packages when creating tags on GitHub (if doable)
-// todo: write new tests and pass existing ones
-// todo: improve utils.rs encryption
