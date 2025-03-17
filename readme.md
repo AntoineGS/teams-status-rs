@@ -15,6 +15,7 @@
         - Double-check the other configurations, they have default values, but you may want/need to change them
     - HA (Home Assistant)
         - Set the URL
+          Home Assistant URL usually has this format: http://Your_HomeAssistant_IP_Goes_Here:8123
         - In Home Assistant, generate a Long-Lived Access
           Token ([see HA documentation](https://developers.home-assistant.io/docs/auth_api/#long-lived-access-token))
             - Paste it into the conf.ini
