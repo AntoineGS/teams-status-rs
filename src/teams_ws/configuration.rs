@@ -27,13 +27,5 @@ pub fn change_teams_configuration(section: &str, key: &str, value: &str) {
     });
 
     i.with_section(Some(section)).set(key, value);
-    // for (sec, prop) in i.iter() {
-    //     for (k, v) in prop.iter() {
-    //         if (sec == Some(section)) && (k == key) {
-    //             prop. v = value;
-    //         }
-    //     }
-    // }
-
     i.write_to_file("conf.ini").unwrap();
 }
