@@ -1,4 +1,4 @@
-use winres::WindowsResource;
+use winresource::WindowsResource;
 
 fn main() {
     let mut res = WindowsResource::new();
