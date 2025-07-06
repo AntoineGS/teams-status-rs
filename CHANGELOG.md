@@ -1,9 +1,36 @@
 # Teams Status - RS
 
+## [1.3.0] - 2025-07-06
+
+### 🚀 Features
+- Move logging to APPDATA subfolder to prevent perm issues on startup
+- Tray icon supports setting up 'launch at startup'
+
+### 🐛 Bug Fixes
+- #39
+
+### ⚙️ Miscellaneous Tasks
+- Migrate from tray-item to tray-icon
+
+
+## [1.2.1] - 2025-06-23
+
+### 🐛 Bug Fixes
+- #38
+
+### 🚜 Refactor
+- Fix encoding
+
+### ⚙️ Miscellaneous Tasks
+- Update deps
+- Migrate winres to winresource which is maintained
+
+
 ## [1.2.0] - 2025-02-06
 
 ### 🚀 Features
 - Prevent opening of the same exe multiple times
+- Fixes #33
 
 ### ⚙️ Miscellaneous Tasks
 - Update deps
