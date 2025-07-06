@@ -44,7 +44,7 @@ conventional_commits = true
 # filter out the commits that are not conventional
 filter_unconventional = true
 # process each line of a commit as an individual commit
-split_commits = true
+split_commits = false
 # regex for preprocessing the commit messages
 commit_preprocessors = [
     # Replace issue numbers
