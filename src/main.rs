@@ -55,16 +55,6 @@ impl Application {
 }
 
 impl ApplicationHandler<UserEvent> for Application {
-    fn resumed(&mut self, _event_loop: &ActiveEventLoop) {}
-
-    fn window_event(
-        &mut self,
-        _event_loop: &ActiveEventLoop,
-        _window_id: WindowId,
-        _event: WindowEvent,
-    ) {
-    }
-
     fn new_events(&mut self, event_loop: &ActiveEventLoop, cause: winit::event::StartCause) {
         if matches!(cause, winit::event::StartCause::Init) {
             // Create tray icon when event loop starts
@@ -74,11 +64,21 @@ impl ApplicationHandler<UserEvent> for Application {
             ));
         }
 
+        // Check if tray needs recreation (for menu label updates)
+        if let Some(tray) = &mut self._tray {
+            if let Some(tray_windows) = tray.as_any_mut().downcast_mut::<crate::tray::TrayWindows>()
+            {
+                tray_windows.check_and_recreate_if_needed();
+            }
+        }
+
         // Check if application should exit
         if !self.is_running.load(Ordering::Relaxed) {
             event_loop.exit();
         }
     }
+
+    fn resumed(&mut self, _event_loop: &ActiveEventLoop) {}
 
     fn user_event(&mut self, _event_loop: &ActiveEventLoop, event: UserEvent) {
         match event {
@@ -87,10 +87,20 @@ impl ApplicationHandler<UserEvent> for Application {
                     self.toggle_mute.store(true, Ordering::Relaxed);
                 } else if event.id.0.as_str() == "quit" {
                     self.is_running.store(false, Ordering::Relaxed);
+                } else if event.id.0.as_str() == "launch_startup" {
+                    tray::TrayWindows::toggle_auto_launch_global();
                 }
             }
-            UserEvent::TrayIconEvent(event) => {}
+            UserEvent::TrayIconEvent(_event) => {}
         }
+    }
+
+    fn window_event(
+        &mut self,
+        _event_loop: &ActiveEventLoop,
+        _window_id: WindowId,
+        _event: WindowEvent,
+    ) {
     }
 }
 
@@ -156,7 +166,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         });
     });
 
-    // Run the winit event loop - this is required for tray menu to work
+    // Run the event loop - this is required for tray menu to work
     event_loop.run_app(&mut app)?;
 
     // Clean up mutex after event loop exits

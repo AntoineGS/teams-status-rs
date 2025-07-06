@@ -1,7 +1,9 @@
 use crate::teams_ws::states::TeamsStates;
 use async_trait::async_trait;
 
-pub trait StopController {}
+pub trait StopController {
+    fn as_any_mut(&mut self) -> &mut dyn std::any::Any;
+}
 
 #[async_trait]
 pub trait Listener {

@@ -28,16 +28,12 @@
     - From the 'Teams Status' tray icon, right-click, and click on `Toggle Mute`
     - You will get a prompt in Teams to allow the application to use the API
         - If you do not click on time Teams will close the prompt. Simply click on Toggle Mute again.
-- Optional: Configure to run automatically after Windows logon
-    - Browse to 'teams_status.exe' using File Explorer, right click and choose Copy
-    - Browse to "%AppData%\Microsoft\Windows\Start Menu\Programs\Startup"
-    - Right-click in a blank area of the File Explorer window and choose Paste Shortcut
 
 # HA Persistent Entities
 
 For the entities to persist with the native HA integration, you will need to create the entities manually:
 
-- Warning! If you are already using the integration, make sure all entities are moved from HA and that
+- Warning! If you are already using the integration, make sure all entities are removed from HA and that
   the `teams-status` application is closed. Otherwise, it will duplicate sensors.
 - In HA's `configuration.yaml` file, under the following section (add it if you do not have it):
 
@@ -97,6 +93,17 @@ template:
     - Disadvantages
         - If you join meetings from another client (mobile, web, etc.), this project will not see those status updates.
         - This project does not provide a general "Presence" color sensor
+
+# Log File Location
+
+- The application writes its log and panic files to `%LOCALAPPDATA%\teams-status-rs` (typically
+  `C:\Users\<username>\AppData\Local\teams-status-rs`) as `output.log` and `panic.log`.
+- If the application cannot create this directory or file (due to permissions or environment), it will attempt to write
+  logs to the current working directory.
+- If started by Windows auto-launch (e.g., via registry), ensure the user account has write permissions to
+  `%LOCALAPPDATA%`.
+- If logging fails, no log file will be created and you may see a permission error in the Windows Event Viewer or a
+  message box.
 
 # Example Data
 
