@@ -95,11 +95,9 @@ impl TrayWindows {
 
     pub fn check_and_recreate_if_needed(&mut self) {
         if self.needs_recreation.load(Ordering::Relaxed) {
-        TrayWindows {
             let auto_launch = self.auto_launch.read().unwrap();
             self.tray = Self::create_tray_icon(&auto_launch);
             self.needs_recreation.store(false, Ordering::Relaxed);
-    }
         }
     }
 
@@ -116,8 +114,6 @@ impl TrayWindows {
 
             match result {
                 Ok(_) => {
-                    let new_state = auto_launch.is_enabled().unwrap_or(false);
-
                     // Signal that tray needs recreation
                     if let Some(flag) = GLOBAL_TRAY_RECREATION_FLAG.lock().unwrap().as_ref() {
                         flag.store(true, Ordering::Relaxed);
